@@ -14,15 +14,16 @@ function drawTexturedTriangle(ctx,source,src,dst){
 function drawFisheye(ctx,source,box,strength){
  const sw=source.videoWidth||source.width,sh=source.videoHeight||source.height;
  if(!sw||!sh||!box.w||!box.h)return;
- // The old 16x9 grid issued 288 draw calls per canvas per frame.
- // Use a lighter mesh to avoid freezing mobile browsers.
- const cols=8,rows=5,s=Math.max(0,Math.min(.85,Number(strength)||0));
- const bulgeDen=1-s*.55,cx=box.x+box.w/2,cy=box.y+box.h/2,src=[],dst=[];
+ // GPU-friendly Canvas mesh: a small number of triangles, no per-pixel CPU loop.
+ const cols=6,rows=4,s=Math.max(0,Math.min(1,Number(strength)||0));
+ const cx=box.x+box.w/2,cy=box.y+box.h/2,src=[],dst=[];
  for(let y=0;y<=rows;y++){
   src[y]=[];dst[y]=[];
   for(let x=0;x<=cols;x++){
-   const u=x/cols,v=y/rows,nx=(u-.5)*2,ny=(v-.5)*2,r=Math.min(1,Math.hypot(nx,ny)/Math.SQRT2);
-   const bulge=(1-s*.55*r*r)/bulgeDen;
+   const u=x/cols,v=y/rows,nx=(u-.5)*2,ny=(v-.5)*2;
+   const r=Math.min(1,Math.hypot(nx,ny)/Math.SQRT2);
+   // Classic barrel / fisheye projection: points near the edges bow outward.
+   const bulge=1+s*.42*r*r;
    src[y][x]={x:u*sw,y:v*sh};
    dst[y][x]={x:cx+(u-.5)*box.w*bulge,y:cy+(v-.5)*box.h*bulge};
   }
@@ -132,7 +133,7 @@ function drawClip(ctx,t,c,mix=1){
  ctx.globalAlpha=t.opacity*mix;
  ctx.beginPath();ctx.rect(box.x,box.y,box.w,box.h);ctx.clip();
  ctx.filter=nativeFilter?(FILTERS[preset]||'none'):'none';
- if(t.fisheye&&state.fisheye>0)drawFisheye(ctx,source,box,state.fisheye);
+ if(t.fisheye&&state.fisheye>0){const r=fitRect(v,box.w,box.h);drawFisheye(ctx,source,{x:box.x+r.x,y:box.y+r.y,w:r.w,h:r.h},state.fisheye);}
  else{const r=fitRect(v,box.w,box.h);ctx.drawImage(source,box.x+r.x,box.y+r.y,r.w,r.h);}
  ctx.restore();
 }
