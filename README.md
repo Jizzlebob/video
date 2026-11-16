@@ -6,7 +6,7 @@ Browserbasierter Video-Mixer für lokale Videodateien mit Layern, Crossfader, St
 
 Öffne die GitHub-Pages-Seite und importiere deine Videos über **Videos importieren**. Für Mikrofonzugriff ist HTTPS und die Browser-Berechtigung erforderlich.
 
-Die App läuft lokal im Browser. Videodateien werden nicht hochgeladen; Projekte speichern nur Einstellungen und Clip-Zuordnungen. Nach einem Neuladen müssen die Videodateien erneut ausgewählt werden.
+Die Videodateien werden direkt im Browser verarbeitet und nicht auf einen Server hochgeladen. Projekte speichern nur Einstellungen und Clip-Zuordnungen. Nach einem Neuladen müssen die Videodateien erneut ausgewählt werden.
 
 ## Veröffentlichung
 
