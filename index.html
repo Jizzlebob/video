@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#101114" />
   <title>VJ Studio — Live Video Mixer</title>
-  <link rel="stylesheet" href="./style.css?v=20261116-5" />
+  <link rel="stylesheet" href="./style.css?v=20261116-6" />
   <style>
     /* Immediate visual fallback while the versioned stylesheet loads. */
     html,body{margin:0;min-height:100%;background:#101114;color:#e9e9eb;font:13px/1.4 Inter,system-ui,sans-serif}
@@ -26,8 +26,8 @@
   <main class="studio">
     <aside class="panel library">
       <div class="panel-title"><div><span class="eyebrow">MEDIA</span><h2>Medienbibliothek</h2></div><span id="mediaCount" class="count">0</span></div>
-      <label class="import-button"><input id="videoInput" type="file" accept="video/*,.mp4,.m4v,.webm,.mov,.ogv,.ogg,.mkv,.avi" multiple /><b>＋</b> Videos importieren</label>
-      <p class="muted small">Importierte Clips werden automatisch als Ebenen hinzugefügt.</p>
+      <div class="project-actions"><button id="exportProject" class="toolbar-button" type="button">Projekt exportieren</button><label class="toolbar-button project-import">Projekt importieren<input id="importProjectInput" type="file" accept="application/json,.json" /></label></div><label class="import-button"><input id="videoInput" type="file" accept="video/*,.mp4,.m4v,.webm,.mov,.ogv,.ogg,.mkv,.avi" multiple /><b>＋</b> Videos importieren</label>
+      <p class="muted small">Importierte Clips werden automatisch als Ebenen hinzugefügt. Projekte speichern nur Einstellungen, nicht die Videodateien.</p>
       <div id="importStatus" class="import-status" role="status" aria-live="polite"></div>
       <div id="mediaList" class="media-list"><div class="empty">Deine Videos erscheinen hier.</div></div>
       <div class="library-bottom"><span class="eyebrow">AUDIO INPUT</span><button id="micToggle" class="mic-button">◉ <span>Mikrofon aktivieren</span></button><div class="meter"><div id="micMeterFill"></div></div><p id="micHelp" class="muted small">Mikrofon benötigt HTTPS und Browser-Berechtigung.</p></div>
@@ -45,6 +45,6 @@
     </section>
   </main>
   <dialog id="effectsDialog" class="effects-dialog"><div class="dialog-head"><div><span class="eyebrow">LIVE PROCESSING</span><h2>Video Effekte & Filter</h2></div><button id="closeEffects" class="toolbar-button">Schließen ✕</button></div><div id="effectsPopupContent"></div></dialog>
-  <script src="./script.js?v=20261116-6"></script>
+  <script src="./script.js?v=20261116-8"></script>
 </body>
 </html>
