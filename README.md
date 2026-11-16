@@ -1,9 +1,15 @@
-# Video Mischpult
+# VJ Studio — Beta
 
-Eine einfache Browser-App zum Importieren und Mischen lokaler Videos mit Strobe- und Fisheye-Effekten sowie Audio-Visualizer und Mikrofonreaktion.
+Browserbasierter Video-Mixer für lokale Videodateien mit Layern, Crossfader, Strobe, Fisheye, Look-Filtern, Chroma Key und Audio-Visualizer.
 
 ## Starten
 
-Öffne die veröffentlichte GitHub-Pages-Seite oder starte die App über einen lokalen Webserver. Importiere Videos über **Videos importieren**. Für Mikrofonzugriff ist eine sichere Verbindung (HTTPS oder localhost) und die Browser-Berechtigung erforderlich.
+Öffne die GitHub-Pages-Seite und importiere deine Videos über **Videos importieren**. Für Mikrofonzugriff ist HTTPS und die Browser-Berechtigung erforderlich.
 
-GitHub Pages kann unter **Settings → Pages** aktiviert werden: **Deploy from a branch**, Branch `main`, Ordner `/(root)`.
+Die Videodateien werden direkt im Browser verarbeitet und nicht auf einen Server hochgeladen. Projekte speichern nur Einstellungen und Clip-Zuordnungen. Nach einem Neuladen müssen die Videodateien erneut ausgewählt werden.
+
+## Veröffentlichung
+
+GitHub Pages wird unter **Settings → Pages** über **Deploy from a branch**, Branch `main`, Ordner `/(root)` veröffentlicht.
+
+Die sichtbare Beta-Version steht oben in der App. Bei jedem Update wird die Versionsnummer erhöht und die Cache-Version der Dateien mitgezogen.
