@@ -12,7 +12,7 @@ function drawTexturedTriangle(ctx,source,src,dst){
  ctx.save();ctx.beginPath();ctx.moveTo(dst[0].x,dst[0].y);ctx.lineTo(dst[1].x,dst[1].y);ctx.lineTo(dst[2].x,dst[2].y);ctx.closePath();ctx.clip();ctx.transform(a,b,c,d,e,f);ctx.drawImage(source,0,0);ctx.restore();
 }
 function drawFisheye(ctx,source,box,strength){
- const cols=24,rows=14,sw=source.width,sh=source.height,cx=box.x+box.w/2,cy=box.y+box.h/2;
+ const cols=16,rows=9,sw=source.width,sh=source.height,cx=box.x+box.w/2,cy=box.y+box.h/2;
  const src=[],dst=[];
  for(let y=0;y<=rows;y++){src[y]=[];dst[y]=[];for(let x=0;x<=cols;x++){const u=x/cols,v=y/rows,px=u*sw,py=v*sh,nx=(u-.5)*2,ny=(v-.5)*2,r=Math.min(1,Math.hypot(nx,ny)/Math.SQRT2),bulge=1+strength*.62*r*r;src[y][x]={x:px,y:py};dst[y][x]={x:cx+(u-.5)*box.w*bulge,y:cy+(v-.5)*box.h*bulge};}}
  for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){const s00=src[y][x],s10=src[y][x+1],s01=src[y+1][x],s11=src[y+1][x+1],d00=dst[y][x],d10=dst[y][x+1],d01=dst[y+1][x],d11=dst[y+1][x+1];drawTexturedTriangle(ctx,source,[s00,s10,s11],[d00,d10,d11]);drawTexturedTriangle(ctx,source,[s00,s11,s01],[d00,d11,d01]);}
