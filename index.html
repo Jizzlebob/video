@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Video Mischpult</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="panel sidebar">
+        <h1>Video Mischpult</h1>
+
+        <label class="upload-button">
+          <input id="videoInput" type="file" accept="video/*" multiple />
+          Videos importieren
+        </label>
+
+        <button id="micToggle" class="primary-button" type="button">
+          Mikrofon aktivieren
+        </button>
+
+        <div class="control-group">
+          <label for="strobeIntensity">Strobe Intensität</label>
+          <input id="strobeIntensity" type="range" min="0" max="1" step="0.01" value="0.7" />
+        </div>
+
+        <div class="control-group">
+          <label for="fisheyeStrength">Fisheye Stärke</label>
+          <input id="fisheyeStrength" type="range" min="0" max="1" step="0.01" value="0.35" />
+        </div>
+
+        <div class="control-group">
+          <label for="visualizerGain">Visualizer Gain</label>
+          <input id="visualizerGain" type="range" min="0" max="2" step="0.01" value="1.1" />
+        </div>
+      </aside>
+
+      <main class="panel stage-panel">
+        <canvas id="mixCanvas" width="1280" height="720"></canvas>
+        <div class="visualizer-wrap">
+          <div id="visualizer" class="visualizer" aria-label="Audio visualizer"></div>
+        </div>
+      </main>
+
+      <section class="panel tracks-panel">
+        <h2>Spuren</h2>
+        <div id="tracks" class="tracks"></div>
+      </section>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

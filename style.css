@@ -1,0 +1,236 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #0b1020;
+  --bg-strong: #111827;
+  --panel: rgba(17, 24, 39, 0.8);
+  --panel-border: rgba(148, 163, 184, 0.2);
+  --text: #e5eefb;
+  --muted: #9aa8bf;
+  --accent: #7c3aed;
+  --accent-2: #22d3ee;
+  --danger: #f43f5e;
+  --shadow: 0 20px 40px rgba(15, 23, 42, 0.6);
+}
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top, rgba(124, 58, 237, 0.25), transparent 30%),
+    linear-gradient(135deg, #050816 0%, #0b1020 50%, #111827 100%);
+  color: var(--text);
+  font-family: Inter, "Segoe UI", sans-serif;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.app-shell {
+  width: min(1500px, 100%);
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(500px, 1fr) minmax(260px, 320px);
+  gap: 20px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+}
+
+.sidebar {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.sidebar h1 {
+  margin: 0;
+  font-size: clamp(1.6rem, 2vw, 2.2rem);
+  line-height: 1.1;
+}
+
+.upload-button,
+.primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid rgba(124, 58, 237, 0.6);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.18), rgba(34, 211, 238, 0.18));
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.upload-button:hover,
+.primary-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 25px rgba(124, 58, 237, 0.2);
+}
+
+.upload-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.upload-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.primary-button {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.25), rgba(124, 58, 237, 0.25));
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.control-group input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent-2);
+}
+
+.stage-panel {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#mixCanvas {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  display: block;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(19, 29, 59, 0.8));
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.visualizer-wrap {
+  padding: 8px 10px 10px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.visualizer {
+  height: 72px;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.visualizer-bar {
+  flex: 1;
+  min-width: 6px;
+  max-width: 14px;
+  border-radius: 999px 999px 0 0;
+  background: linear-gradient(180deg, var(--accent-2) 0%, var(--accent) 100%);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.6);
+  transition: height 0.08s ease;
+}
+
+.tracks-panel {
+  padding: 18px 16px;
+}
+
+.tracks-panel h2 {
+  margin: 0 0 12px;
+  font-size: 1.2rem;
+}
+
+.tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 720px;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.track {
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 12px 10px;
+}
+
+.track-title {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.track-toggle-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.track-toggle-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.track-controls input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.track-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.remove-track {
+  border: 1px solid rgba(244, 63, 94, 0.5);
+  background: rgba(244, 63, 94, 0.1);
+  color: #fecdd3;
+  border-radius: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+@media (max-width: 1100px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .tracks {
+    max-height: none;
+  }
+}
