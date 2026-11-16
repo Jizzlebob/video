@@ -17,29 +17,32 @@ function drawFisheye(ctx,source,box,strength){
  for(let y=0;y<=rows;y++){src[y]=[];dst[y]=[];for(let x=0;x<=cols;x++){const u=x/cols,v=y/rows,px=u*sw,py=v*sh,nx=(u-.5)*2,ny=(v-.5)*2,r=Math.min(1,Math.hypot(nx,ny)/Math.SQRT2),bulge=1+strength*.62*r*r;src[y][x]={x:px,y:py};dst[y][x]={x:cx+(u-.5)*box.w*bulge,y:cy+(v-.5)*box.h*bulge};}}
  for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){const s00=src[y][x],s10=src[y][x+1],s01=src[y+1][x],s11=src[y+1][x+1],d00=dst[y][x],d10=dst[y][x+1],d01=dst[y+1][x],d11=dst[y+1][x+1];drawTexturedTriangle(ctx,source,[s00,s10,s11],[d00,d10,d11]);drawTexturedTriangle(ctx,source,[s00,s11,s01],[d00,d11,d01]);}
 }
+const FILTERS={none:'none',cinema:'contrast(1.18) saturate(.82) sepia(.12)',vivid:'contrast(1.16) saturate(1.65)',mono:'grayscale(1)',noir:'grayscale(1) contrast(1.55)',dream:'brightness(1.12) saturate(1.35)',warm:'sepia(.28) saturate(1.25)',cool:'hue-rotate(18deg) saturate(1.18)',invert:'invert(1)'};
+function applyFallbackFilter(ctx,canvas,v,preset){
+ const scale=Math.min(1,640/Math.max(v.videoWidth,v.videoHeight)),w=Math.max(1,Math.round(v.videoWidth*scale)),h=Math.max(1,Math.round(v.videoHeight*scale));
+ if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;canvas._vjTime=-1;}
+ const cacheKey=v.currentTime+'|'+preset;if(canvas._vjKey===cacheKey)return canvas;
+ ctx.clearRect(0,0,w,h);ctx.drawImage(v,0,0,w,h);
+ try{const im=ctx.getImageData(0,0,w,h),p=im.data,cl=(x)=>Math.max(0,Math.min(255,x));for(let i=0;i<p.length;i+=4){let r=p[i],g=p[i+1],b=p[i+2];switch(preset){case'mono':case'noir':{const y=.2126*r+.7152*g+.0722*b,k=preset==='noir'?1.55:1;r=g=b=cl((y-128)*k+128);break;}case'invert':r=255-r;g=255-g;b=255-b;break;case'vivid':r=cl((r-128)*1.16+128);g=cl((g-128)*1.16+128);b=cl((b-128)*1.16+128);break;case'warm':r=cl(r*1.08+18);g=cl(g*1.02+5);b=cl(b*.88);break;case'cool':r=cl(r*.9);b=cl(b*1.12+8);break;case'cinema':r=cl(r*.9+12);g=cl(g*.88+8);b=cl(b*.82+5);break;case'dream':r=cl(r*1.08+12);g=cl(g*1.08+12);b=cl(b*1.08+12);break;}p[i]=r;p[i+1]=g;p[i+2]=b;}ctx.putImageData(im,0,0);canvas._vjKey=cacheKey;return canvas;}catch(e){return v;}
+}
 function drawClip(ctx,t,c,mix=1){
  const v=t.video;if(!t.visible||v.readyState<HTMLMediaElement.HAVE_CURRENT_DATA||!v.videoWidth)return;
- const box={x:t.x*c.width,y:t.y*c.height,w:t.w*c.width,h:t.h*c.height};
- const filterMap={none:'none',cinema:'contrast(1.18) saturate(.82) sepia(.12)',vivid:'contrast(1.16) saturate(1.65)',mono:'grayscale(1)',noir:'grayscale(1) contrast(1.55)',dream:'brightness(1.12) saturate(1.35) blur(.35px)',warm:'sepia(.28) saturate(1.25)',cool:'hue-rotate(18deg) saturate(1.18)',invert:'invert(1)'};
- let source=v;
- const filter=filterMap[state.filterPreset]||'none';
- if(filter!=='none'){
-  const fc=t.filterCanvas||(t.filterCanvas=document.createElement('canvas'));
-  if(fc.width!==v.videoWidth||fc.height!==v.videoHeight){fc.width=v.videoWidth;fc.height=v.videoHeight}
-  const fctx=fc.getContext('2d',{willReadFrequently:!('filter' in fc.getContext('2d'))});
-  if('filter' in fctx){fctx.save();fctx.clearRect(0,0,fc.width,fc.height);fctx.filter=filter;fctx.drawImage(v,0,0,fc.width,fc.height);fctx.restore();source=fc;}
-  else{
-   fctx.clearRect(0,0,fc.width,fc.height);fctx.drawImage(v,0,0,fc.width,fc.height);
-   try{const im=fctx.getImageData(0,0,fc.width,fc.height),p=im.data;if(rustCore){const bytes=new Uint8Array(p.buffer,p.byteOffset,p.byteLength),codes={cinema:1,vivid:2,mono:3,noir:4,dream:5,warm:6,cool:7,invert:8};rustCore.apply_filter_rgba(bytes,codes[state.filterPreset]||0);}else for(let i=0;i<p.length;i+=4){let r=p[i],g=p[i+1],b=p[i+2];switch(state.filterPreset){case'mono':case'noir':{const y=.2126*r+.7152*g+.0722*b,k=state.filterPreset==='noir'?1.55:1;r=clamp((y-128)*k+128,0,255);g=b=r;break}case'invert':r=255-r;g=255-g;b=255-b;break;case'vivid':r=clamp((r-128)*1.16+128,0,255);g=clamp((g-128)*1.16+128,0,255);b=clamp((b-128)*1.16+128,0,255);break;case'warm':r=clamp(r*1.08+18,0,255);g=clamp(g*1.02+5,0,255);b=clamp(b*.88,0,255);break;case'cool':r=clamp(r*.9,0,255);b=clamp(b*1.12+8,0,255);break;case'cinema':r=clamp(r*.9+12,0,255);g=clamp(g*.88+8,0,255);b=clamp(b*.82+5,0,255);break;case'dream':r=clamp(r*1.08+12,0,255);g=clamp(g*1.08+12,0,255);b=clamp(b*1.08+12,0,255);break;}}fctx.putImageData(im,0,0);source=fc;}catch(e){source=v;}
-  }
- }
+ const box={x:t.x*c.width,y:t.y*c.height,w:t.w*c.width,h:t.h*c.height},filter=FILTERS[state.filterPreset]||'none';
+ let source=v,filterSupported=('filter' in ctx);
  if(state.chromaEnabled){
-  const w=Math.max(1,source.width||v.videoWidth),h=Math.max(1,source.height||v.videoHeight),off=t.keyCanvas||(t.keyCanvas=document.createElement('canvas'));
-  if(off.width!==w||off.height!==h){off.width=w;off.height=h}
-  const k=off.getContext('2d',{willReadFrequently:true});k.drawImage(source,0,0,w,h);
-  try{const im=k.getImageData(0,0,w,h),p=im.data,key=rgb(state.chromaColor),tol=state.chromaTolerance*2.2;for(let i=0;i<p.length;i+=4){const dr=p[i]-key.r,dg=p[i+1]-key.g,db=p[i+2]-key.b,dist=Math.sqrt(dr*dr+dg*dg+db*db);if(dist<tol)p[i+3]=0;else if(dist<tol+28)p[i+3]=Math.min(p[i+3],Math.round(255*(dist-tol)/28));}k.putImageData(im,0,0);source=off;}catch(e){source=v;}
+  const maxSide=960,scale=Math.min(1,maxSide/Math.max(v.videoWidth,v.videoHeight)),w=Math.max(1,Math.round(v.videoWidth*scale)),h=Math.max(1,Math.round(v.videoHeight*scale));
+  const off=t.keyCanvas||(t.keyCanvas=document.createElement('canvas'));if(off.width!==w||off.height!==h){off.width=w;off.height=h;t.keyTime='';}
+  const k=off.getContext('2d',{willReadFrequently:true});
+  const keyCache=v.currentTime+'|'+state.filterPreset+'|'+state.chromaColor+'|'+state.chromaTolerance;if(t.keyTime!==keyCache){
+   if(filterSupported){k.save();k.clearRect(0,0,w,h);k.filter=filter;k.drawImage(v,0,0,w,h);k.restore();}
+   else {k.clearRect(0,0,w,h);k.drawImage(v,0,0,w,h);if(filter!=='none')applyFallbackFilter(k,off,v,state.filterPreset);}
+   try{const im=k.getImageData(0,0,w,h),p=im.data,key=rgb(state.chromaColor),tol=state.chromaTolerance*2.2;for(let i=0;i<p.length;i+=4){const dr=p[i]-key.r,dg=p[i+1]-key.g,db=p[i+2]-key.b,dist=Math.sqrt(dr*dr+dg*dg+db*db);if(dist<tol)p[i+3]=0;else if(dist<tol+28)p[i+3]=Math.min(p[i+3],Math.round(255*(dist-tol)/28));}k.putImageData(im,0,0);source=off;t.keyTime=keyCache;}catch(e){source=v;}
+  }else source=off;
+ }else if(filter!=='none'&&!filterSupported){
+  const fc=t.filterCanvas||(t.filterCanvas=document.createElement('canvas'));source=applyFallbackFilter(fc.getContext('2d',{willReadFrequently:true}),fc,v,state.filterPreset);
  }
- ctx.save();ctx.globalAlpha=t.opacity*mix;ctx.beginPath();ctx.rect(box.x,box.y,box.w,box.h);ctx.clip();ctx.filter='none';
+ ctx.save();ctx.globalAlpha=t.opacity*mix;ctx.beginPath();ctx.rect(box.x,box.y,box.w,box.h);ctx.clip();
+ ctx.filter=(state.chromaEnabled||!filterSupported)?'none':filter;
  if(t.fisheye&&state.fisheye>0)drawFisheye(ctx,source,box,state.fisheye);
  else {const r=fitRect(v,box.w,box.h);ctx.drawImage(source,box.x+r.x,box.y+r.y,r.w,r.h);}
  ctx.restore();
