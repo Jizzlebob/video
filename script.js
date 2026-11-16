@@ -1,22 +1,325 @@
-const previewCanvas=document.getElementById('previewCanvas');const previewCtx=previewCanvas.getContext('2d');const outputCanvas=document.getElementById('mixCanvas');const outputCtx=outputCanvas.getContext('2d');const tracksElement=document.getElementById('tracks');const mediaList=document.getElementById('mediaList');const videoInput=document.getElementById('videoInput');const state={tracks:[],selectedId:null,strobe:0,strobeRate:4,fisheye:0,crossfade:50,visualizerStyle:'bars',micGain:8,micEnabled:false,micStream:null,audioContext:null,analyser:null,timeData:null,freqData:null,micLevel:0,micPeak:0,lastBeat:0,lastAbove:false,outputWindow:null,screens:[]};const clamp=(v,min,max)=>Math.min(max,Math.max(min,v));
-function fitRect(video,w,h){const ratio=video.videoWidth/video.videoHeight,target=w/h;let dw=w,dh=h;if(ratio>target)dh=w/ratio;else dw=h*ratio;return{x:(w-dw)/2,y:(h-dh)/2,w:dw,h:dh}}
-function backdrop(ctx,canvas){const g=ctx.createLinearGradient(0,0,canvas.width,canvas.height);g.addColorStop(0,'#171627');g.addColorStop(.52,'#13181d');g.addColorStop(1,'#071716');ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height)}
-function drawClip(ctx,track,canvas){const v=track.video;if(!track.visible||v.readyState<HTMLMediaElement.HAVE_CURRENT_DATA||!v.videoWidth)return;const r=fitRect(v,canvas.width,canvas.height),cx=canvas.width/2,cy=canvas.height/2;ctx.save();ctx.globalAlpha=track.opacity;const zoom=1+(track.fisheye?state.fisheye*.45:0);ctx.translate(cx,cy);ctx.scale(zoom,zoom);ctx.translate(-cx,-cy);ctx.filter=track.fisheye?`saturate(${1.3+state.fisheye}) contrast(1.12)`:'none';ctx.drawImage(v,r.x,r.y,r.w,r.h);ctx.restore();if(track.fisheye&&state.fisheye>0){ctx.save();const g=ctx.createRadialGradient(cx,cy,canvas.height*.08,cx,cy,canvas.width*.65);g.addColorStop(.35,'transparent');g.addColorStop(1,`rgba(0,0,0,${state.fisheye*.5})`);ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height);ctx.restore()}}
-function drawVisualizer(ctx,w,h,time){const data=state.freqData,n=64,base=h*.91,level=state.micLevel,style=state.visualizerStyle;ctx.save();ctx.globalCompositeOperation='screen';ctx.lineCap='round';if(style==='wave'){ctx.beginPath();for(let i=0;i<=n;i++){const x=i/n*w;const v=data?Math.abs((state.timeData[Math.floor(i/n*(state.timeData.length-1))]-128)/128):(Math.sin(time*.004+i*.2)+1)*.12;const y=h*.83-v*h*.42-level*h*.13;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.shadowBlur=14;ctx.shadowColor='#39d9c5';ctx.strokeStyle='#5be9d8';ctx.lineWidth=Math.max(2,h*.006);ctx.stroke()}else if(style==='circle'){const cx=w/2,cy=h/2,r=Math.min(w,h)*.17;for(let i=0;i<n;i++){const a=i/n*Math.PI*2-Math.PI/2;const b=data?data[Math.floor(i/n*data.length)]/255:(Math.sin(time*.003+i*.3)+1)*.12;const outer=r+b*h*.28+level*h*.1;ctx.beginPath();ctx.moveTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);ctx.lineTo(cx+Math.cos(a)*outer,cy+Math.sin(a)*outer);ctx.strokeStyle=i%2?'#bd70ff':'#54e6d5';ctx.lineWidth=Math.max(2,h*.006);ctx.shadowBlur=10;ctx.shadowColor=ctx.strokeStyle;ctx.stroke()}}else{const bw=w/n;for(let i=0;i<n;i++){const b=data?data[Math.floor(i/n*data.length)]/255:(Math.sin(time*.003+i*.24)+1)*.12;const env=style==='spectrum'?Math.pow(1-i/n,.45):1;const bh=Math.max(h*.01,(b*.78+level*.2)*h*env);const x=i*bw+bw*.16;const g=ctx.createLinearGradient(0,base-bh,0,base);g.addColorStop(0,'#ff487d');g.addColorStop(.5,'#bd70ff');g.addColorStop(1,'#39d9c5');ctx.fillStyle=g;ctx.shadowBlur=9;ctx.shadowColor='#bd70ff';ctx.fillRect(x,base-bh,bw*.68,bh)}}ctx.restore()}
-function flash(ctx,time){if(!state.strobe)return;const period=1000/state.strobeRate;const beat=state.micEnabled&&time-state.lastBeat<Math.min(110,period*.5);const pulse=(time%period)<Math.min(70,period*.2);if(!beat&&!pulse)return;const alpha=clamp(state.strobe*(.15+(state.micEnabled?state.micPeak*.42:.18)),0,.55);ctx.save();ctx.globalCompositeOperation='screen';ctx.fillStyle=`rgba(255,255,255,${alpha})`;ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);ctx.restore()}
-function scene(ctx,canvas,time,preview=false){backdrop(ctx,canvas);if(preview){const track=state.tracks.find(t=>t.id===state.selectedId);if(track)drawClip(ctx,track,canvas);else{ctx.fillStyle='#9b9da3';ctx.font='600 28px system-ui';ctx.textAlign='center';ctx.fillText('Wähle einen Clip aus der Bibliothek',canvas.width/2,canvas.height/2)}return}const visible=state.tracks.filter(t=>t.visible);const a=visible.filter(t=>t.deck==='A'),b=visible.filter(t=>t.deck==='B');a.forEach(t=>drawClip(ctx,t,canvas));b.forEach(t=>drawClip(ctx,t,canvas));const alpha=state.crossfade/100;if(a.length&&b.length){ctx.save();ctx.globalAlpha=alpha;const top=b[b.length-1];drawClip(ctx,{...top,opacity:top.opacity},canvas);ctx.restore()}if(state.visualizerStyle!=='off')drawVisualizer(ctx,canvas.width,canvas.height,time);flash(ctx,time);if(!visible.length){ctx.fillStyle='#929399';ctx.font='600 28px system-ui';ctx.textAlign='center';ctx.fillText('Clips auf Deck A oder B laden',canvas.width/2,canvas.height/2)}}
-function makeCheck(text,cls,t,checked){const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.className=cls;input.dataset.id=t.id;input.checked=checked;label.append(input,document.createTextNode(text));return label}
-function range(labelText,cls,t,value){const label=document.createElement('label');label.className='track-range';label.append(document.createTextNode(`${labelText} ${Math.round(value*100)}%`));const input=document.createElement('input');input.type='range';input.min='0';input.max='1';input.step='.01';input.value=value;input.dataset.id=t.id;input.className=cls;input.setAttribute('aria-label',labelText);label.append(input);return label}
-function button(text,action,t,title){const b=document.createElement('button');b.type='button';b.textContent=text;b.dataset.action=action;b.dataset.id=t.id;b.title=title;return b}
-function renderTracks(){tracksElement.replaceChildren();if(!state.tracks.length){const e=document.createElement('div');e.className='empty';e.textContent='Videos importieren, um Layer anzulegen.';tracksElement.append(e);return}state.tracks.forEach((t,i)=>{const row=document.createElement('article');row.className=`track${t.id===state.selectedId?' selected':''}`;const title=document.createElement('div');title.className='track-title-wrap';const num=document.createElement('span');num.className='track-number';num.textContent=String(i+1).padStart(2,'0');const stack=document.createElement('div');stack.style.minWidth='0';const name=document.createElement('div');name.className='track-title';name.textContent=t.name;const sub=document.createElement('div');sub.className='track-subtitle';sub.textContent=t.deck==='A'?'DECK A':'DECK B';stack.append(name,sub);title.append(num,stack);const toggles=document.createElement('div');toggles.className='track-toggles';toggles.append(makeCheck('On','track-visible',t,t.visible),makeCheck('Strobe','track-strobe',t,t.strobe),makeCheck('Fish','track-fisheye',t,t.fisheye));const opacity=range('Deckkraft','track-opacity',t,t.opacity);const volume=range('Lautstärke','track-volume',t,t.volume);const order=document.createElement('div');order.className='track-order';order.append(button('↑','up',t,'nach vorne'),button('↓','down',t,'nach hinten'));const actions=document.createElement('div');actions.className='track-actions';const deck=document.createElement('select');deck.className='deck-select';deck.dataset.action='deck';deck.dataset.id=t.id;deck.innerHTML=`<option value="A" ${t.deck==='A'?'selected':''}>Deck A</option><option value="B" ${t.deck==='B'?'selected':''}>Deck B</option>`;const preview=button(t.id===state.selectedId?'Preview ✓':'Preview','select',t,'Preview auswählen');const remove=button('×','remove',t,'Clip entfernen');remove.classList.add('delete');actions.append(deck,preview,remove);row.append(title,toggles,opacity,volume,order,actions);tracksElement.append(row)})}
-function renderMedia(){mediaList.replaceChildren();document.getElementById('mediaCount').textContent=state.tracks.length;if(!state.tracks.length){const e=document.createElement('div');e.className='empty';e.textContent='Deine Videos erscheinen hier.';mediaList.append(e);return}state.tracks.forEach(t=>{const item=document.createElement('div');item.className=`media-item${t.id===state.selectedId?' selected':''}`;item.dataset.id=t.id;const thumb=document.createElement('span');thumb.className='media-thumb';thumb.textContent='▶';const wrap=document.createElement('span');wrap.style.minWidth='0';const title=document.createElement('div');title.className='media-name';title.textContent=t.name;const meta=document.createElement('div');meta.className='media-meta';meta.textContent=`DECK ${t.deck} · ${t.visible?'AKTIV':'AUS'}`;wrap.append(title,meta);item.append(thumb,wrap);mediaList.append(item)})}
-function refresh(){renderTracks();renderMedia()}
-tracksElement.addEventListener('input',e=>{const c=e.target,t=state.tracks.find(x=>x.id===c.dataset.id);if(!t)return;if(c.classList.contains('track-visible'))t.visible=c.checked;if(c.classList.contains('track-strobe'))t.strobe=c.checked;if(c.classList.contains('track-fisheye'))t.fisheye=c.checked;if(c.classList.contains('track-opacity'))t.opacity=Number(c.value);if(c.classList.contains('track-volume')){t.volume=Number(c.value);t.video.volume=t.volume;t.video.muted=t.volume===0}if(c.type==='checkbox')refresh()});tracksElement.addEventListener('change',e=>{const c=e.target;if(c.classList.contains('deck-select')){const t=state.tracks.find(x=>x.id===c.dataset.id);if(t){t.deck=c.value;refresh()}}});tracksElement.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const i=state.tracks.findIndex(t=>t.id===b.dataset.id);if(i<0)return;const action=b.dataset.action;if(action==='remove'){const[t]=state.tracks.splice(i,1);t.video.pause();URL.revokeObjectURL(t.url);if(t.id===state.selectedId)state.selectedId=state.tracks[0]?.id||null}else if(action==='select')state.selectedId=state.tracks[i].id;else if(action==='up'&&i<state.tracks.length-1)[state.tracks[i],state.tracks[i+1]]=[state.tracks[i+1],state.tracks[i]];else if(action==='down'&&i>0)[state.tracks[i],state.tracks[i-1]]=[state.tracks[i-1],state.tracks[i]];refresh()});mediaList.addEventListener('click',e=>{const item=e.target.closest('.media-item');if(!item)return;state.selectedId=item.dataset.id;refresh()});
-videoInput.addEventListener('change',e=>{Array.from(e.target.files||[]).filter(f=>f.type.startsWith('video/')).forEach(file=>{const url=URL.createObjectURL(file),video=document.createElement('video');video.src=url;video.loop=true;video.muted=true;video.playsInline=true;video.preload='auto';video.addEventListener('canplay',()=>video.play().catch(()=>{}),{once:true});const t={id:`${Date.now()}-${Math.random().toString(16).slice(2)}`,name:file.name.replace(/\.[^/.]+$/,''),url,video,volume:.8,opacity:1,visible:true,strobe:false,fisheye:false,deck:state.tracks.some(x=>x.deck==='A')?'B':'A'};state.tracks.push(t);state.selectedId=t.id});refresh();e.target.value=''});
-const strobe=document.getElementById('strobeIntensity'),rate=document.getElementById('strobeRate'),fish=document.getElementById('fisheyeStrength'),gain=document.getElementById('visualizerGain'),visual=document.getElementById('visualizerStyle'),cross=document.getElementById('crossfader');function controls(){state.strobe=Number(strobe.value);state.strobeRate=Number(rate.value);state.fisheye=Number(fish.value);state.micGain=Number(gain.value);state.visualizerStyle=visual.value;state.crossfade=Number(cross.value);document.getElementById('strobeValue').value=`${Math.round(state.strobe/0.6*100)}%`;document.getElementById('rateValue').value=`${state.strobeRate} Hz`;document.getElementById('fisheyeValue').value=`${Math.round(state.fisheye*100)}%`;document.getElementById('gainValue').value=`${state.micGain}×`;document.getElementById('crossfadeValue').value=`A ${100-state.crossfade} / ${state.crossfade} B`} [strobe,rate,fish,gain,visual,cross].forEach(el=>{el.addEventListener('input',controls);el.addEventListener('change',controls)});
-document.getElementById('playAll').addEventListener('click',()=>state.tracks.forEach(t=>t.video.play().catch(()=>{})));document.getElementById('pauseAll').addEventListener('click',()=>state.tracks.forEach(t=>t.video.pause()));
-const micButton=document.getElementById('micToggle'),micHelp=document.getElementById('micHelp'),micStatus=document.getElementById('micStatus'),meter=document.getElementById('micMeterFill');micButton.addEventListener('click',async()=>{if(state.micEnabled){state.micStream.getTracks().forEach(t=>t.stop());await state.audioContext.close();state.micEnabled=false;state.analyser=null;state.freqData=null;state.timeData=null;state.micLevel=0;micButton.classList.remove('active');micButton.innerHTML='◉ <span>Mikrofon aktivieren</span>';micStatus.textContent='MIC OFF';return}if(!navigator.mediaDevices?.getUserMedia){micHelp.textContent='Mikrofonzugriff benötigt HTTPS oder localhost.';return}try{state.micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});const AC=window.AudioContext||window.webkitAudioContext;state.audioContext=new AC();await state.audioContext.resume();state.analyser=state.audioContext.createAnalyser();state.analyser.fftSize=2048;state.analyser.smoothingTimeConstant=.65;state.audioContext.createMediaStreamSource(state.micStream).connect(state.analyser);state.timeData=new Uint8Array(state.analyser.fftSize);state.freqData=new Uint8Array(state.analyser.frequencyBinCount);state.micEnabled=true;micButton.classList.add('active');micButton.innerHTML='◉ <span>Mikrofon deaktivieren</span>';micStatus.textContent='MIC LIVE';micHelp.textContent='Mikrofon aktiv. Sprich oder spiele Musik ab, um den Pegel zu testen.'}catch(err){micHelp.textContent=err.name==='NotAllowedError'?'Mikrofon blockiert: Berechtigung in den Browser-Einstellungen erlauben.':'Mikrofon nicht verfügbar. HTTPS-Verbindung und Eingabegerät prüfen.'}});
-function updateAudio(){if(!state.analyser){state.micLevel*=.9;state.micPeak*=.9;meter.style.width=`${state.micLevel*100}%`;return}state.analyser.getByteTimeDomainData(state.timeData);state.analyser.getByteFrequencyData(state.freqData);let sum=0;for(const value of state.timeData){const x=(value-128)/128;sum+=x*x}const rms=Math.sqrt(sum/state.timeData.length),raw=clamp(rms*state.micGain*4,0,1);state.micLevel=raw>state.micLevel?state.micLevel*.35+raw*.65:state.micLevel*.86+raw*.14;state.micPeak=Math.max(raw,state.micPeak*.92);const now=performance.now(),above=raw>.13;if(above&&!state.lastAbove&&now-state.lastBeat>140)state.lastBeat=now;state.lastAbove=above;meter.style.width=`${state.micLevel*100}%`}
-async function detectScreens(){const select=document.getElementById('monitorSelect');if(!window.getScreenDetails)return;try{const d=await window.getScreenDetails();state.screens=d.screens;select.replaceChildren();d.screens.forEach((s,i)=>{const o=document.createElement('option');o.value=i;o.textContent=s.label||`Bildschirm ${i+1}`;select.append(o)})}catch(e){console.warn('Monitorliste nicht verfügbar',e)}}document.getElementById('detectMonitors').addEventListener('click',detectScreens);
-function openOutput(){const win=window.open('','vjstudio-output','popup,width=1280,height=760');if(!win){alert('Popup blockiert. Bitte Popups für diese Seite erlauben.');return}state.outputWindow=win;win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>VJ Studio Output</title><style>*{box-sizing:border-box}body{margin:0;background:#090a0d;color:#aaa;font:11px system-ui}header{height:30px;padding:7px 12px;background:#191a1e;letter-spacing:.12em}canvas{width:100vw;height:calc(100vh - 30px);display:block}</style></head><body><header>VJ STUDIO · PROGRAM OUTPUT</header><canvas id="out" width="1280" height="720"></canvas></body></html>');win.document.close();const idx=Number(document.getElementById('monitorSelect').value),screen=state.screens[idx];if(screen){try{win.moveTo(screen.availLeft,screen.availTop);win.resizeTo(screen.availWidth,screen.availHeight)}catch(e){}}}document.getElementById('openOutput').addEventListener('click',openOutput);document.getElementById('fullscreenOutput').addEventListener('click',()=>{const win=state.outputWindow&&!state.outputWindow.closed?state.outputWindow:window;win.document.documentElement.requestFullscreen?.().catch(()=>{})});
-function animate(time){updateAudio();scene(previewCtx,previewCanvas,time,true);scene(outputCtx,outputCanvas,time,false);if(state.outputWindow&&!state.outputWindow.closed){const c=state.outputWindow.document.getElementById('out');if(c)c.getContext('2d').drawImage(outputCanvas,0,0,c.width,c.height)}else if(state.outputWindow?.closed)state.outputWindow=null;const selected=state.tracks.find(t=>t.id===state.selectedId);document.getElementById('previewLabel').textContent=selected?.name||'Clip auswählen';document.getElementById('outputLabel').textContent=`${state.tracks.filter(t=>t.visible).length} Ebenen aktiv`;requestAnimationFrame(animate)}document.addEventListener('keydown',e=>{if(e.code==='Space'&&!['INPUT','SELECT','BUTTON'].includes(document.activeElement.tagName)){e.preventDefault();const t=state.tracks.find(x=>x.id===state.selectedId);if(t){if(t.video.paused)t.video.play().catch(()=>{});else t.video.pause()}}});controls();renderTracks();renderMedia();requestAnimationFrame(animate);
+const previewCanvas = document.getElementById('previewCanvas');
+const previewCtx = previewCanvas.getContext('2d');
+const outputCanvas = document.getElementById('mixCanvas');
+const outputCtx = outputCanvas.getContext('2d');
+const tracksElement = document.getElementById('tracks');
+const mediaList = document.getElementById('mediaList');
+const videoInput = document.getElementById('videoInput');
+const importStatus = document.getElementById('importStatus');
+
+const state = {
+  tracks: [], selectedId: null, strobe: 0, strobeRate: 4, fisheye: 0,
+  crossfade: 50, visualizerStyle: 'bars', micGain: 8, micEnabled: false,
+  micStream: null, audioContext: null, analyser: null, timeData: null,
+  freqData: null, micLevel: 0, micPeak: 0, lastBeat: 0, lastAbove: false,
+  outputWindow: null, screens: [],
+};
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+const supportedVideo = /\.(mp4|m4v|webm|mov|ogv|ogg|mkv|avi)$/i;
+
+function setImportStatus(message, isError = false) {
+  if (!importStatus) return;
+  importStatus.textContent = message;
+  importStatus.classList.toggle('error', isError);
+}
+
+function fitRect(video, width, height) {
+  const ratio = video.videoWidth / video.videoHeight;
+  const target = width / height;
+  let drawWidth = width;
+  let drawHeight = height;
+  if (ratio > target) drawHeight = width / ratio;
+  else drawWidth = height * ratio;
+  return { x: (width - drawWidth) / 2, y: (height - drawHeight) / 2, width: drawWidth, height: drawHeight };
+}
+
+function backdrop(ctx, canvas) {
+  const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  gradient.addColorStop(0, '#171627'); gradient.addColorStop(.52, '#13181d'); gradient.addColorStop(1, '#071716');
+  ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function drawClip(ctx, track, canvas, mix = 1) {
+  const video = track.video;
+  if (!track.visible || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA || !video.videoWidth || !video.videoHeight) return;
+  const rect = fitRect(video, canvas.width, canvas.height);
+  const cx = canvas.width / 2; const cy = canvas.height / 2;
+  ctx.save();
+  ctx.globalAlpha = track.opacity * mix;
+  const zoom = 1 + (track.fisheye ? state.fisheye * .45 : 0);
+  ctx.translate(cx, cy); ctx.scale(zoom, zoom); ctx.translate(-cx, -cy);
+  ctx.filter = track.fisheye ? `saturate(${1.3 + state.fisheye}) contrast(1.12)` : 'none';
+  ctx.drawImage(video, rect.x, rect.y, rect.width, rect.height);
+  ctx.restore();
+  if (track.fisheye && state.fisheye > 0) {
+    ctx.save(); ctx.globalAlpha = track.opacity * mix;
+    const vignette = ctx.createRadialGradient(cx, cy, canvas.height * .08, cx, cy, canvas.width * .65);
+    vignette.addColorStop(.35, 'rgba(0,0,0,0)'); vignette.addColorStop(1, `rgba(0,0,0,${state.fisheye * .5})`);
+    ctx.fillStyle = vignette; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.restore();
+  }
+}
+
+function drawVisualizer(ctx, width, height, time) {
+  const data = state.freqData; const count = 64; const base = height * .91; const level = state.micLevel;
+  ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.lineCap = 'round';
+  if (state.visualizerStyle === 'wave') {
+    ctx.beginPath();
+    for (let i = 0; i <= count; i += 1) {
+      const x = i / count * width;
+      const sample = data ? Math.abs((state.timeData[Math.floor(i / count * (state.timeData.length - 1))] - 128) / 128) : (Math.sin(time * .004 + i * .2) + 1) * .12;
+      const y = height * .83 - sample * height * .42 - level * height * .13;
+      if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+    }
+    ctx.shadowBlur = 14; ctx.shadowColor = '#39d9c5'; ctx.strokeStyle = '#5be9d8'; ctx.lineWidth = Math.max(2, height * .006); ctx.stroke();
+  } else if (state.visualizerStyle === 'circle') {
+    const cx = width / 2; const cy = height / 2; const radius = Math.min(width, height) * .17;
+    for (let i = 0; i < count; i += 1) {
+      const angle = i / count * Math.PI * 2 - Math.PI / 2;
+      const value = data ? data[Math.floor(i / count * data.length)] / 255 : (Math.sin(time * .003 + i * .3) + 1) * .12;
+      const outer = radius + value * height * .28 + level * height * .1;
+      ctx.beginPath(); ctx.moveTo(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius); ctx.lineTo(cx + Math.cos(angle) * outer, cy + Math.sin(angle) * outer);
+      ctx.strokeStyle = i % 2 ? '#bd70ff' : '#54e6d5'; ctx.lineWidth = Math.max(2, height * .006); ctx.shadowBlur = 10; ctx.shadowColor = ctx.strokeStyle; ctx.stroke();
+    }
+  } else {
+    const barWidth = width / count;
+    for (let i = 0; i < count; i += 1) {
+      const value = data ? data[Math.floor(i / count * data.length)] / 255 : (Math.sin(time * .003 + i * .24) + 1) * .12;
+      const envelope = state.visualizerStyle === 'spectrum' ? Math.pow(1 - i / count, .45) : 1;
+      const barHeight = Math.max(height * .01, (value * .78 + level * .2) * height * envelope);
+      const x = i * barWidth + barWidth * .16;
+      const gradient = ctx.createLinearGradient(0, base - barHeight, 0, base);
+      gradient.addColorStop(0, '#ff487d'); gradient.addColorStop(.5, '#bd70ff'); gradient.addColorStop(1, '#39d9c5');
+      ctx.fillStyle = gradient; ctx.shadowBlur = 9; ctx.shadowColor = '#bd70ff'; ctx.fillRect(x, base - barHeight, barWidth * .68, barHeight);
+    }
+  }
+  ctx.restore();
+}
+
+function drawStrobe(ctx, time) {
+  if (!state.strobe || !state.tracks.some((track) => track.visible && track.strobe)) return;
+  const period = 1000 / state.strobeRate;
+  const beat = state.micEnabled && time - state.lastBeat < Math.min(110, period * .5);
+  const pulse = time % period < Math.min(70, period * .2);
+  if (!beat && !pulse) return;
+  const alpha = clamp(state.strobe * (.15 + (state.micEnabled ? state.micPeak * .42 : .18)), 0, .55);
+  ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = `rgba(255,255,255,${alpha})`; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); ctx.restore();
+}
+
+function renderScene(ctx, canvas, time, preview = false) {
+  backdrop(ctx, canvas);
+  if (preview) {
+    const track = state.tracks.find((item) => item.id === state.selectedId);
+    if (track) drawClip(ctx, track, canvas);
+    else { ctx.fillStyle = '#9b9da3'; ctx.font = '600 28px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Wähle einen Clip aus der Bibliothek', canvas.width / 2, canvas.height / 2); }
+    return;
+  }
+  const visible = state.tracks.filter((track) => track.visible);
+  const deckA = visible.filter((track) => track.deck === 'A');
+  const deckB = visible.filter((track) => track.deck === 'B');
+  const bMix = state.crossfade / 100;
+  deckA.forEach((track) => drawClip(ctx, track, canvas, deckB.length ? 1 - bMix : 1));
+  deckB.forEach((track) => drawClip(ctx, track, canvas, deckA.length ? bMix : 1));
+  if (state.visualizerStyle !== 'off') drawVisualizer(ctx, canvas.width, canvas.height, time);
+  drawStrobe(ctx, time);
+  if (!visible.length) { ctx.fillStyle = '#929399'; ctx.font = '600 28px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Clips auf Deck A oder B laden', canvas.width / 2, canvas.height / 2); }
+}
+
+function createCheck(text, className, track, checked) {
+  const label = document.createElement('label'); const input = document.createElement('input');
+  input.type = 'checkbox'; input.className = className; input.dataset.id = track.id; input.checked = checked;
+  label.append(input, document.createTextNode(text)); return label;
+}
+function createRange(labelText, className, track, value) {
+  const label = document.createElement('label'); label.className = 'track-range'; label.append(document.createTextNode(`${labelText} ${Math.round(value * 100)}%`));
+  const input = document.createElement('input'); input.type = 'range'; input.min = '0'; input.max = '1'; input.step = '.01'; input.value = value; input.dataset.id = track.id; input.className = className; input.setAttribute('aria-label', labelText); label.append(input); return label;
+}
+function createButton(text, action, track, title) {
+  const button = document.createElement('button'); button.type = 'button'; button.textContent = text; button.dataset.action = action; button.dataset.id = track.id; button.title = title; return button;
+}
+
+function renderTracks() {
+  tracksElement.replaceChildren();
+  if (!state.tracks.length) { const empty = document.createElement('div'); empty.className = 'empty'; empty.textContent = 'Videos importieren, um Layer anzulegen.'; tracksElement.append(empty); return; }
+  state.tracks.forEach((track, index) => {
+    const row = document.createElement('article'); row.className = `track${track.id === state.selectedId ? ' selected' : ''}`;
+    const title = document.createElement('div'); title.className = 'track-title-wrap';
+    const number = document.createElement('span'); number.className = 'track-number'; number.textContent = String(index + 1).padStart(2, '0');
+    const stack = document.createElement('div'); stack.style.minWidth = '0';
+    const name = document.createElement('div'); name.className = 'track-title'; name.textContent = track.name; name.title = track.name;
+    const subtitle = document.createElement('div'); subtitle.className = 'track-subtitle'; subtitle.textContent = `DECK ${track.deck}${track.error ? ' · Ladefehler' : ''}`;
+    stack.append(name, subtitle); title.append(number, stack);
+    const toggles = document.createElement('div'); toggles.className = 'track-toggles';
+    toggles.append(createCheck('On', 'track-visible', track, track.visible), createCheck('Strobe', 'track-strobe', track, track.strobe), createCheck('Fish', 'track-fisheye', track, track.fisheye));
+    const opacity = createRange('Deckkraft', 'track-opacity', track, track.opacity);
+    const volume = createRange('Lautstärke', 'track-volume', track, track.volume);
+    const order = document.createElement('div'); order.className = 'track-order'; order.append(createButton('↑', 'up', track, 'Nach vorne'), createButton('↓', 'down', track, 'Nach hinten'));
+    const actions = document.createElement('div'); actions.className = 'track-actions';
+    const deck = document.createElement('select'); deck.className = 'deck-select'; deck.dataset.action = 'deck'; deck.dataset.id = track.id;
+    deck.innerHTML = `<option value="A" ${track.deck === 'A' ? 'selected' : ''}>Deck A</option><option value="B" ${track.deck === 'B' ? 'selected' : ''}>Deck B</option>`;
+    actions.append(deck, createButton(track.id === state.selectedId ? 'Preview ✓' : 'Preview', 'select', track, 'Preview auswählen'));
+    const remove = createButton('×', 'remove', track, 'Clip entfernen'); remove.classList.add('delete'); actions.append(remove);
+    row.append(title, toggles, opacity, volume, order, actions); tracksElement.append(row);
+  });
+}
+
+function renderMedia() {
+  mediaList.replaceChildren(); document.getElementById('mediaCount').textContent = state.tracks.length;
+  if (!state.tracks.length) { const empty = document.createElement('div'); empty.className = 'empty'; empty.textContent = 'Deine Videos erscheinen hier.'; mediaList.append(empty); return; }
+  state.tracks.forEach((track) => {
+    const item = document.createElement('div'); item.className = `media-item${track.id === state.selectedId ? ' selected' : ''}`; item.dataset.id = track.id;
+    const thumb = document.createElement('span'); thumb.className = 'media-thumb'; thumb.textContent = track.error ? '!' : '▶';
+    const wrap = document.createElement('span'); wrap.style.minWidth = '0';
+    const title = document.createElement('div'); title.className = 'media-name'; title.textContent = track.name;
+    const meta = document.createElement('div'); meta.className = 'media-meta'; meta.textContent = track.error || `DECK ${track.deck} · ${track.visible ? 'AKTIV' : 'AUS'}`;
+    wrap.append(title, meta); item.append(thumb, wrap); mediaList.append(item);
+  });
+}
+function refresh() { renderTracks(); renderMedia(); }
+
+tracksElement.addEventListener('input', (event) => {
+  const control = event.target; const track = state.tracks.find((item) => item.id === control.dataset.id); if (!track) return;
+  if (control.classList.contains('track-visible')) track.visible = control.checked;
+  if (control.classList.contains('track-strobe')) track.strobe = control.checked;
+  if (control.classList.contains('track-fisheye')) track.fisheye = control.checked;
+  if (control.classList.contains('track-opacity')) track.opacity = Number(control.value);
+  if (control.classList.contains('track-volume')) { track.volume = Number(control.value); track.video.volume = track.volume; track.video.muted = track.volume === 0; }
+  if (control.type === 'checkbox') refresh();
+});
+tracksElement.addEventListener('change', (event) => {
+  const control = event.target;
+  if (control.classList.contains('deck-select')) { const track = state.tracks.find((item) => item.id === control.dataset.id); if (track) { track.deck = control.value; refresh(); } }
+});
+tracksElement.addEventListener('click', (event) => {
+  const button = event.target.closest('button[data-action]'); if (!button) return;
+  const index = state.tracks.findIndex((track) => track.id === button.dataset.id); if (index < 0) return;
+  const action = button.dataset.action;
+  if (action === 'remove') { const [track] = state.tracks.splice(index, 1); track.video.pause(); URL.revokeObjectURL(track.url); if (track.id === state.selectedId) state.selectedId = state.tracks[0]?.id || null; }
+  else if (action === 'select') state.selectedId = state.tracks[index].id;
+  else if (action === 'up' && index < state.tracks.length - 1) [state.tracks[index], state.tracks[index + 1]] = [state.tracks[index + 1], state.tracks[index]];
+  else if (action === 'down' && index > 0) [state.tracks[index], state.tracks[index - 1]] = [state.tracks[index - 1], state.tracks[index]];
+  refresh();
+});
+mediaList.addEventListener('click', (event) => { const item = event.target.closest('.media-item'); if (item) { state.selectedId = item.dataset.id; refresh(); } });
+
+videoInput.addEventListener('change', (event) => {
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
+  // Some browsers provide an empty or generic MIME type for valid local video files;
+  // use the filename extension as a fallback instead of silently discarding them.
+  const videos = files.filter((file) => file.type.startsWith('video/') || supportedVideo.test(file.name));
+  const rejected = files.length - videos.length;
+  videos.forEach((file) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.src = url; video.loop = true; video.muted = true; video.playsInline = true; video.preload = 'auto';
+    video.setAttribute('playsinline', ''); video.setAttribute('webkit-playsinline', '');
+    const track = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`, name: file.name.replace(/\.[^/.]+$/, ''),
+      url, video, volume: .8, opacity: 1, visible: true, strobe: false, fisheye: false,
+      deck: state.tracks.some((item) => item.deck === 'A') ? 'B' : 'A', error: '',
+    };
+    video.addEventListener('loadedmetadata', () => {
+      setImportStatus(`Geladen: ${file.name} (${video.videoWidth}×${video.videoHeight})`);
+      video.play().catch((error) => {
+        console.warn('Autoplay wurde verhindert; starte den Clip per Play:', error);
+        setImportStatus(`Clip geladen. Falls er nicht läuft, klicke ▶ oder erlaube die Wiedergabe.`);
+      });
+    }, { once: true });
+    video.addEventListener('error', () => {
+      const code = video.error?.code;
+      const message = code === 4 ? 'Codec nicht unterstützt (MP4/H.264 oder WebM probieren).' : 'Datei konnte nicht gelesen werden.';
+      track.error = message; setImportStatus(`${file.name}: ${message}`, true); refresh();
+    });
+    state.tracks.push(track); state.selectedId = track.id;
+    // load() ensures the selected local File is fetched by the media element.
+    video.load();
+  });
+  if (!videos.length) setImportStatus('Keine Videodatei erkannt. MP4, WebM, MOV, OGV, MKV oder AVI auswählen.', true);
+  else if (rejected) setImportStatus(`${videos.length} Video(s) hinzugefügt; ${rejected} Datei(en) übersprungen.`);
+  else setImportStatus(`${videos.length} Video(s) werden geladen …`);
+  refresh(); event.target.value = '';
+});
+
+const strobe = document.getElementById('strobeIntensity'); const rate = document.getElementById('strobeRate');
+const fish = document.getElementById('fisheyeStrength'); const gain = document.getElementById('visualizerGain');
+const visual = document.getElementById('visualizerStyle'); const cross = document.getElementById('crossfader');
+function updateControls() {
+  state.strobe = Number(strobe.value); state.strobeRate = Number(rate.value); state.fisheye = Number(fish.value);
+  state.micGain = Number(gain.value); state.visualizerStyle = visual.value; state.crossfade = Number(cross.value);
+  document.getElementById('strobeValue').value = `${Math.round(state.strobe / .6 * 100)}%`;
+  document.getElementById('rateValue').value = `${state.strobeRate} Hz`;
+  document.getElementById('fisheyeValue').value = `${Math.round(state.fisheye * 100)}%`;
+  document.getElementById('gainValue').value = `${state.micGain}×`;
+  document.getElementById('crossfadeValue').value = `A ${100 - state.crossfade} / ${state.crossfade} B`;
+}
+[strobe, rate, fish, gain, visual, cross].forEach((input) => { input.addEventListener('input', updateControls); input.addEventListener('change', updateControls); });
+document.getElementById('playAll').addEventListener('click', () => state.tracks.forEach((track) => track.video.play().catch(() => {})));
+document.getElementById('pauseAll').addEventListener('click', () => state.tracks.forEach((track) => track.video.pause()));
+
+const micButton = document.getElementById('micToggle'); const micHelp = document.getElementById('micHelp'); const micStatus = document.getElementById('micStatus'); const meter = document.getElementById('micMeterFill');
+micButton.addEventListener('click', async () => {
+  if (state.micEnabled) {
+    state.micStream.getTracks().forEach((track) => track.stop()); await state.audioContext.close();
+    state.micEnabled = false; state.analyser = null; state.freqData = null; state.timeData = null; state.micLevel = 0;
+    micButton.classList.remove('active'); micButton.innerHTML = '◉ <span>Mikrofon aktivieren</span>'; micStatus.textContent = 'MIC OFF'; return;
+  }
+  if (!navigator.mediaDevices?.getUserMedia) { micHelp.textContent = 'Mikrofonzugriff benötigt HTTPS oder localhost.'; return; }
+  try {
+    state.micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    state.audioContext = new AudioContextClass(); await state.audioContext.resume();
+    state.analyser = state.audioContext.createAnalyser(); state.analyser.fftSize = 2048; state.analyser.smoothingTimeConstant = .65;
+    state.audioContext.createMediaStreamSource(state.micStream).connect(state.analyser);
+    state.timeData = new Uint8Array(state.analyser.fftSize); state.freqData = new Uint8Array(state.analyser.frequencyBinCount);
+    state.micEnabled = true; micButton.classList.add('active'); micButton.innerHTML = '◉ <span>Mikrofon deaktivieren</span>'; micStatus.textContent = 'MIC LIVE';
+    micHelp.textContent = 'Mikrofon aktiv. Sprich oder spiele Musik ab, um den Pegel zu testen.';
+  } catch (error) { micHelp.textContent = error.name === 'NotAllowedError' ? 'Mikrofon blockiert: Berechtigung in den Browser-Einstellungen erlauben.' : 'Mikrofon nicht verfügbar. HTTPS-Verbindung und Eingabegerät prüfen.'; }
+});
+
+function updateAudio() {
+  if (!state.analyser) { state.micLevel *= .9; state.micPeak *= .9; meter.style.width = `${state.micLevel * 100}%`; return; }
+  state.analyser.getByteTimeDomainData(state.timeData); state.analyser.getByteFrequencyData(state.freqData);
+  let sum = 0; for (const value of state.timeData) { const sample = (value - 128) / 128; sum += sample * sample; }
+  const rms = Math.sqrt(sum / state.timeData.length); const raw = clamp(rms * state.micGain * 4, 0, 1);
+  state.micLevel = raw > state.micLevel ? state.micLevel * .35 + raw * .65 : state.micLevel * .86 + raw * .14;
+  state.micPeak = Math.max(raw, state.micPeak * .92);
+  const now = performance.now(); const above = raw > .13;
+  if (above && !state.lastAbove && now - state.lastBeat > 140) state.lastBeat = now;
+  state.lastAbove = above; meter.style.width = `${state.micLevel * 100}%`;
+}
+
+async function detectScreens() {
+  if (!window.getScreenDetails) return;
+  try {
+    const details = await window.getScreenDetails(); state.screens = details.screens;
+    const select = document.getElementById('monitorSelect'); select.replaceChildren();
+    details.screens.forEach((screen, index) => { const option = document.createElement('option'); option.value = index; option.textContent = screen.label || `Bildschirm ${index + 1}`; select.append(option); });
+  } catch (error) { console.warn('Monitorliste nicht verfügbar:', error); }
+}
+document.getElementById('detectMonitors').addEventListener('click', detectScreens);
+function openOutput() {
+  const win = window.open('', 'vjstudio-output', 'popup,width=1280,height=760');
+  if (!win) { setImportStatus('Popup blockiert. Erlaube Popups für das Ausgabe-Fenster.', true); return; }
+  state.outputWindow = win;
+  win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>VJ Studio Output</title><style>*{box-sizing:border-box}body{margin:0;background:#090a0d;color:#aaa;font:11px system-ui}header{height:30px;padding:7px 12px;background:#191a1e;letter-spacing:.12em}canvas{width:100vw;height:calc(100vh - 30px);display:block}</style></head><body><header>VJ STUDIO · PROGRAM OUTPUT</header><canvas id="out" width="1280" height="720"></canvas></body></html>');
+  win.document.close(); const screen = state.screens[Number(document.getElementById('monitorSelect').value)];
+  if (screen) { try { win.moveTo(screen.availLeft, screen.availTop); win.resizeTo(screen.availWidth, screen.availHeight); } catch (error) { console.info(error); } }
+}
+document.getElementById('openOutput').addEventListener('click', openOutput);
+document.getElementById('fullscreenOutput').addEventListener('click', () => { const win = state.outputWindow && !state.outputWindow.closed ? state.outputWindow : window; win.document.documentElement.requestFullscreen?.().catch(() => {}); });
+
+function animate(time) {
+  updateAudio(); renderScene(previewCtx, previewCanvas, time, true); renderScene(outputCtx, outputCanvas, time, false);
+  if (state.outputWindow && !state.outputWindow.closed) { const canvas = state.outputWindow.document.getElementById('out'); if (canvas) canvas.getContext('2d').drawImage(outputCanvas, 0, 0, canvas.width, canvas.height); }
+  else if (state.outputWindow?.closed) state.outputWindow = null;
+  const selected = state.tracks.find((track) => track.id === state.selectedId);
+  document.getElementById('previewLabel').textContent = selected?.name || 'Clip auswählen';
+  document.getElementById('outputLabel').textContent = `${state.tracks.filter((track) => track.visible).length} Ebenen`;
+  requestAnimationFrame(animate);
+}
+document.addEventListener('keydown', (event) => {
+  if (event.code !== 'Space' || ['INPUT', 'SELECT', 'BUTTON'].includes(document.activeElement.tagName)) return;
+  event.preventDefault(); const track = state.tracks.find((item) => item.id === state.selectedId);
+  if (track) (track.video.paused ? track.video.play() : Promise.resolve()).catch?.(() => {});
+});
+updateControls(); renderTracks(); renderMedia(); requestAnimationFrame(animate);
