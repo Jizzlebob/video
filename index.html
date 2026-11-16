@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#101114" />
   <title>VJ Studio — Live Video Mixer</title>
-  <link rel="stylesheet" href="./style.css?v=20261116-4" />
+  <link rel="stylesheet" href="./style.css?v=20261116-5" />
   <style>
     /* Immediate visual fallback while the versioned stylesheet loads. */
     html,body{margin:0;min-height:100%;background:#101114;color:#e9e9eb;font:13px/1.4 Inter,system-ui,sans-serif}
@@ -21,7 +21,7 @@
 <body>
   <header class="topbar">
     <a class="brand" href="#"><span class="brand-icon">VJ</span><span>VJ STUDIO <small>LIVE VIDEO MIXER</small></span></a>
-    <div class="top-actions"><span class="engine-status"><i></i> ENGINE READY</span><button id="openEffects" class="toolbar-button">✧ <span>Effekte</span></button><button id="openOutput" class="toolbar-button">↗ <span>Ausgabe öffnen</span></button><button id="fullscreenOutput" class="toolbar-button" title="Vollbild">⛶</button></div>
+    <div id="remotePair" class="remote-pair"><span class="remote-label">REMOTE CODE</span><strong id="remoteCode">------</strong><span id="remoteAddress">Server wird gestartet …</span><span id="remotePeers">0 Geräte verbunden</span></div><div class="top-actions"><span class="engine-status"><i></i> ENGINE READY</span><button id="openEffects" class="toolbar-button">✧ <span>Effekte</span></button><button id="openOutput" class="toolbar-button">↗ <span>Ausgabe öffnen</span></button><button id="fullscreenOutput" class="toolbar-button" title="Vollbild">⛶</button></div>
   </header>
   <main class="studio">
     <aside class="panel library">
@@ -45,6 +45,6 @@
     </section>
   </main>
   <dialog id="effectsDialog" class="effects-dialog"><div class="dialog-head"><div><span class="eyebrow">LIVE PROCESSING</span><h2>Video Effekte & Filter</h2></div><button id="closeEffects" class="toolbar-button">Schließen ✕</button></div><div id="effectsPopupContent"></div></dialog>
-  <script src="./script.js?v=20261116-4"></script>
+  <script src="./script.js?v=20261116-5"></script>
 </body>
 </html>
