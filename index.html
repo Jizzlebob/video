@@ -1,76 +1,41 @@
 <!DOCTYPE html>
 <html lang="de">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#080b12" />
-    <title>VJ Studio — Video Mischpult</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <div class="app-shell">
-      <header class="topbar">
-        <a class="brand" href="#" aria-label="VJ Studio Startseite"><span class="brand-mark">VJ</span><span>STUDIO <small>LIVE MIXER</small></span></a>
-        <div class="live-state"><span class="live-dot"></span> LIVE OUTPUT</div>
-      </header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#101114" />
+  <title>VJ Studio — Live Video Mixer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#"><span class="brand-icon">VJ</span><span>VJ STUDIO <small>LIVE VIDEO MIXER</small></span></a>
+    <div class="top-actions"><span class="engine-status"><i></i> ENGINE READY</span><button id="openOutput" class="toolbar-button">↗ <span>Ausgabe öffnen</span></button><button id="fullscreenOutput" class="toolbar-button">⛶</button></div>
+  </header>
 
-      <aside class="panel sidebar">
-        <div class="section-heading"><span class="eyebrow">CONTROL ROOM</span><span class="status-pill">BETA</span></div>
-        <h1>Video<br><span>Mischpult</span></h1>
-        <label class="upload-button"><input id="videoInput" type="file" accept="video/*" multiple /><span>＋</span> Videos importieren</label>
-        <p class="hint">Mehrere Clips laden und als Ebenen kombinieren.</p>
+  <main class="studio">
+    <aside class="panel library">
+      <div class="panel-title"><div><span class="eyebrow">MEDIA</span><h2>Medienbibliothek</h2></div><span id="mediaCount" class="count">0</span></div>
+      <label class="import-button"><input id="videoInput" type="file" accept="video/*" multiple /><b>＋</b> Videos importieren</label>
+      <p class="muted small">Importierte Clips werden automatisch als Ebenen hinzugefügt.</p>
+      <div id="mediaList" class="media-list"><div class="empty">Deine Videos erscheinen hier.</div></div>
+      <div class="library-bottom"><span class="eyebrow">AUDIO INPUT</span><button id="micToggle" class="mic-button">◉ <span>Mikrofon aktivieren</span></button><div class="meter"><div id="micMeterFill"></div></div><p id="micHelp" class="muted small">Mikrofon benötigt HTTPS und Browser-Berechtigung.</p></div>
+    </aside>
 
-        <div class="control-section">
-          <div class="section-title">AUDIO INPUT <span id="micStatus" class="mini-status">AUS</span></div>
-          <button id="micToggle" class="primary-button" type="button"><span class="mic-icon">◉</span> Mikrofon aktivieren</button>
-          <div class="meter"><div id="micMeterFill"></div></div>
-          <div class="control-group"><label for="visualizerGain">Mikrofon-Empfindlichkeit <output id="gainValue">8×</output></label><input id="visualizerGain" type="range" min="1" max="20" step="0.5" value="8" /></div>
-          <p id="micHelp" class="hint">Mikrofon erlauben, um Visualizer und Strobe live zu steuern.</p>
-        </div>
+    <section class="main-area">
+      <section class="monitor-row">
+        <article class="panel monitor"><div class="monitor-title"><div><span class="eyebrow">SOURCE</span><h2>Preview</h2></div><span id="previewLabel" class="monitor-info">Clip auswählen</span></div><div class="canvas-wrap"><canvas id="previewCanvas" width="1280" height="720"></canvas><span class="corner-label">PREVIEW</span></div></article>
+        <article class="panel monitor program"><div class="monitor-title"><div><span class="eyebrow">LIVE OUTPUT</span><h2>Program</h2></div><span class="live-badge"><i></i> LIVE</span></div><div class="canvas-wrap"><canvas id="mixCanvas" width="1280" height="720"></canvas><span class="corner-label">PROGRAM</span></div><div class="monitor-bottom"><span id="outputLabel">0 Ebenen</span><div class="monitor-tools"><select id="monitorSelect" aria-label="Ausgabemonitor"><option value="current">Dieser Bildschirm</option></select><button id="detectMonitors" class="subtle-button" title="Bildschirme erkennen">⌖</button></div></div></article>
+      </section>
 
-        <div class="control-section">
-          <div class="section-title">EFFEKTE</div>
-          <div class="control-group"><label for="strobeIntensity">Strobe Stärke <output id="strobeValue">70%</output></label><input id="strobeIntensity" type="range" min="0" max="1" step="0.01" value="0.7" /></div>
-          <div class="control-group"><label for="strobeRate">Strobe Tempo <output id="rateValue">4 Hz</output></label><input id="strobeRate" type="range" min="1" max="12" step="0.5" value="4" /></div>
-          <div class="control-group"><label for="fisheyeStrength">Fisheye Stärke <output id="fisheyeValue">35%</output></label><input id="fisheyeStrength" type="range" min="0" max="1" step="0.01" value="0.35" /></div>
-        </div>
+      <section class="panel layer-panel"><div class="panel-title"><div><span class="eyebrow">COMPOSITION</span><h2>Layer Mixer</h2></div><span class="muted small">Obere Ebene liegt vorne · ↑↓ ändert Reihenfolge</span></div><div id="tracks" class="tracks"><div class="empty">Videos importieren, um Layer anzulegen.</div></div></section>
 
-        <div class="control-section">
-          <div class="section-title">AUDIO VISUALIZER</div>
-          <div class="control-group"><label for="visualizerStyle">Stil</label><select id="visualizerStyle"><option value="bars">Neon Bars</option><option value="wave">Waveform</option><option value="circle">Orbit</option><option value="spectrum">Spectrum</option></select></div>
-          <p class="hint">Der Visualizer wird direkt in Preview und Ausgabe gerendert.</p>
-        </div>
-
-        <div class="control-section output-controls">
-          <div class="section-title">AUSGABE-MONITOR</div>
-          <select id="monitorSelect" aria-label="Ausgabemonitor"><option value="current">Dieser Bildschirm</option></select>
-          <button id="detectMonitors" class="secondary-button" type="button">Bildschirme erkennen</button>
-          <button id="openOutput" class="primary-button" type="button">↗ Ausgabe-Fenster öffnen</button>
-          <p id="monitorHelp" class="hint">Für einen externen Monitor: erkennen, Bildschirm auswählen und Ausgabe öffnen.</p>
-        </div>
-      </aside>
-
-      <main class="workspace">
-        <section class="monitor-grid">
-          <article class="panel monitor-card">
-            <div class="monitor-heading"><div><span class="eyebrow">SOURCE MONITOR</span><h2>Preview</h2></div><span class="monitor-tag">VORSCHAU</span></div>
-            <div class="canvas-frame preview-frame"><canvas id="previewCanvas" width="1280" height="720"></canvas><span class="canvas-corner">PREVIEW</span></div>
-            <div class="monitor-footer"><span id="previewLabel">Kein Clip ausgewählt</span><span>QUELLE</span></div>
-          </article>
-          <article class="panel monitor-card output-card">
-            <div class="monitor-heading"><div><span class="eyebrow">PROGRAM MONITOR</span><h2>Ausgabe</h2></div><span class="monitor-tag live-tag"><i></i> LIVE</span></div>
-            <div class="canvas-frame"><canvas id="mixCanvas" width="1280" height="720"></canvas><span class="canvas-corner">PROGRAM</span></div>
-            <div class="monitor-footer"><span id="outputLabel">0 Ebenen aktiv</span><button id="fullscreenOutput" class="icon-button" type="button" title="Ausgabe bildschirmfüllend anzeigen">⛶ Vollbild</button></div>
-          </article>
-        </section>
-
-        <section class="panel layers-panel">
-          <div class="layers-heading"><div><span class="eyebrow">COMPOSITION</span><h2>Video-Ebenen</h2></div><span class="hint">Reihenfolge: unten = Hintergrund · oben = Vordergrund</span></div>
-          <div id="tracks" class="tracks"><div class="empty-state">Noch keine Clips. Importiere Videos, um loszulegen.</div></div>
-        </section>
-        <p class="safety-note">⚠ Strobe kann bei empfindlichen Personen Anfälle oder Unwohlsein auslösen. Effekte vorsichtig verwenden.</p>
-      </main>
-    </div>
-    <script src="script.js"></script>
-  </body>
+      <section class="panel control-deck"><div class="transport"><button id="playAll" class="transport-button" title="Alle Clips abspielen">▶</button><button id="pauseAll" class="transport-button" title="Alle Clips pausieren">Ⅱ</button><div class="crossfader-block"><div class="control-label"><span>VIDEO CROSSFADE</span><output id="crossfadeValue">A 50 / 50 B</output></div><input id="crossfader" type="range" min="0" max="100" value="50" /></div></div>
+        <div class="effect-deck"><div class="deck-heading"><span class="eyebrow">VIDEO FX</span><span class="muted small">Live</span></div><div class="effect-controls"><label class="effect-control"><span>STROBE <output id="strobeValue">0%</output></span><input id="strobeIntensity" type="range" min="0" max="0.6" step="0.01" value="0" /></label><label class="effect-control"><span>RATE <output id="rateValue">4 Hz</output></span><input id="strobeRate" type="range" min="1" max="12" step="0.5" value="4" /></label><label class="effect-control"><span>FISHEYE <output id="fisheyeValue">0%</output></span><input id="fisheyeStrength" type="range" min="0" max="1" step="0.01" value="0" /></label></div></div>
+        <div class="effect-deck audio-deck"><div class="deck-heading"><span class="eyebrow">AUDIO REACTIVE</span><span id="micStatus" class="muted small">MIC OFF</span></div><div class="effect-controls"><label class="effect-control"><span>VISUALIZER</span><select id="visualizerStyle"><option value="bars">Neon Bars</option><option value="wave">Waveform</option><option value="circle">Orbit</option><option value="spectrum">Spectrum</option><option value="off">Aus</option></select></label><label class="effect-control"><span>MIC GAIN <output id="gainValue">8×</output></span><input id="visualizerGain" type="range" min="1" max="20" step="0.5" value="8" /></label></div></div></section>
+      <p class="safety-note">⚠ Strobe kann bei empfindlichen Personen Anfälle oder Unwohlsein auslösen. Intensität vorsichtig einstellen.</p>
+    </section>
+  </main>
+  <script src="script.js"></script>
+</body>
 </html>
