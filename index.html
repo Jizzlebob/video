@@ -5,7 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#101114" />
   <title>VJ Studio — Live Video Mixer</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="./style.css?v=20261116-2" />
+  <style>
+    /* Immediate visual fallback while the versioned stylesheet loads. */
+    html,body{margin:0;min-height:100%;background:#101114;color:#e9e9eb;font:13px/1.4 Inter,system-ui,sans-serif}
+    body{padding:0 18px 22px}.topbar{height:60px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #303136;margin-bottom:16px}
+    .studio{max-width:1800px;margin:auto;display:grid;grid-template-columns:270px minmax(0,1fr);gap:14px}.panel{background:#1b1c20;border:1px solid #303136;border-radius:7px}
+    .library{padding:14px;display:flex;flex-direction:column;min-height:calc(100vh - 92px)}.main-area{min-width:0;display:flex;flex-direction:column;gap:12px}
+    .monitor-row{display:grid;grid-template-columns:1fr 1.15fr;gap:12px}.monitor,.layer-panel,.control-deck{padding:12px}.canvas-wrap{position:relative;aspect-ratio:16/9;overflow:hidden;background:#050609;border:1px solid #34353a}.canvas-wrap canvas{display:block;width:100%;height:100%}
+    .import-button,.mic-button,.toolbar-button,.subtle-button{padding:8px 12px;border:1px solid #667c20;border-radius:5px;background:#242529;color:#e9e9eb;font:inherit;cursor:pointer}.import-button{position:relative}.import-button input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+    .tracks{display:flex;flex-direction:column;gap:5px}.track{display:flex;gap:10px;align-items:center;padding:8px;background:#202125;border:1px solid #36373c}.empty{padding:18px;text-align:center;color:#929399;border:1px dashed #3c3d42}.eyebrow,.muted,.small,.monitor-info,.monitor-bottom{color:#929399}.control-deck{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    @media(max-width:820px){body{padding:0 9px 14px}.studio{grid-template-columns:1fr}.monitor-row,.control-deck{grid-template-columns:1fr}}
+  </style>
 </head>
 <body>
   <header class="topbar">
@@ -29,11 +40,10 @@
       <section class="panel layer-panel"><div class="panel-title"><div><span class="eyebrow">COMPOSITION</span><h2>Layer Mixer</h2></div><span class="muted small">Drag im Program: Video verschieben · ↘-Ecke: Größe ändern</span></div><div id="tracks" class="tracks"><div class="empty">Videos importieren, um Layer anzulegen.</div></div></section>
       <section class="panel control-deck"><div class="transport"><button id="playAll" class="transport-button" title="Alle Clips abspielen">▶</button><button id="pauseAll" class="transport-button" title="Alle Clips pausieren">Ⅱ</button><div class="crossfader-block"><div class="control-label"><span>VIDEO CROSSFADE</span><output id="crossfadeValue">A 50 / 50 B</output></div><input id="crossfader" type="range" min="0" max="100" value="50" /></div></div>
         <div class="effect-deck"><div class="deck-heading"><span class="eyebrow">VIDEO FX</span><span class="muted small">Live</span></div><div class="effect-controls"><label class="effect-control"><span>STROBE <output id="strobeValue">0%</output></span><input id="strobeIntensity" type="range" min="0" max="0.85" step="0.01" value="0" /></label><label class="effect-control"><span>RATE <output id="rateValue">4 Hz</output></span><input id="strobeRate" type="range" min="1" max="8" step="0.5" value="4" /></label><label class="effect-control"><span>FISHEYE <output id="fisheyeValue">0%</output></span><input id="fisheyeStrength" type="range" min="0" max="1" step="0.01" value="0" /></label><label class="chroma-toggle"><input id="chromaEnabled" type="checkbox" /><span>CHROMA KEY</span></label><label class="effect-control color-control"><span>KEY-FARBE</span><input id="chromaColor" type="color" value="#00ff00" /></label><label class="effect-control"><span>TOLERANZ <output id="chromaValue">35</output></span><input id="chromaTolerance" type="range" min="5" max="120" step="1" value="35" /></label></div></div>
-        <div class="effect-deck audio-deck"><div class="deck-heading"><span class="eyebrow">AUDIO REACTIVE</span><span id="micStatus" class="muted small">MIC OFF</span></div><div class="effect-controls"><label class="effect-control"><span>VISUALIZER</span><select id="visualizerStyle"><option value="bars">Neon Bars</option><option value="wave">Waveform</option><option value="circle">Orbit</option><option value="spectrum">Spectrum</option><option value="off">Aus</option></select></label><label class="effect-control"><span>MIC GAIN <output id="gainValue">8×</output></span><input id="visualizerGain" type="range" min="1" max="30" step="0.5" value="12" /></label></div><p class="muted small drag-hint">Visualizer im Program-Bild mit der Maus ziehen, zum Skalieren am Rand ziehen.</p></div>
-      </section>
+        <div class="effect-deck audio-deck"><div class="deck-heading"><span class="eyebrow">AUDIO REACTIVE</span><span id="micStatus" class="muted small">MIC OFF</span></div><div class="effect-controls"><label class="effect-control"><span>VISUALIZER</span><select id="visualizerStyle"><option value="bars">Neon Bars</option><option value="wave">Waveform</option><option value="circle">Orbit</option><option value="spectrum">Spectrum</option><option value="off">Aus</option></select></label><label class="effect-control"><span>MIC GAIN <output id="gainValue">8×</output></span><input id="visualizerGain" type="range" min="1" max="30" step="0.5" value="12" /></label></div><p class="muted small drag-hint">Visualizer im Program-Bild mit der Maus ziehen, zum Skalieren am Rand ziehen.</p></div></section>
       <p class="safety-note">⚠ Strobe kann bei empfindlichen Personen Anfälle oder Unwohlsein auslösen. Intensität vorsichtig einstellen.</p>
     </section>
   </main>
-  <script src="script.js"></script>
+  <script src="./script.js?v=20261116-2"></script>
 </body>
 </html>
