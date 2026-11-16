@@ -18,24 +18,31 @@ function drawFisheye(ctx,source,box,strength){
  for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){const s00=src[y][x],s10=src[y][x+1],s01=src[y+1][x],s11=src[y+1][x+1],d00=dst[y][x],d10=dst[y][x+1],d01=dst[y+1][x],d11=dst[y+1][x+1];drawTexturedTriangle(ctx,source,[s00,s10,s11],[d00,d10,d11]);drawTexturedTriangle(ctx,source,[s00,s11,s01],[d00,d11,d01]);}
 }
 const FILTERS={none:'none',cinema:'contrast(1.18) saturate(.82) sepia(.12)',vivid:'contrast(1.16) saturate(1.65)',mono:'grayscale(1)',noir:'grayscale(1) contrast(1.55)',dream:'brightness(1.12) saturate(1.35)',warm:'sepia(.28) saturate(1.25)',cool:'hue-rotate(18deg) saturate(1.18)',invert:'invert(1)'};
+function applyFallbackFilter(ctx,canvas,v,preset){
+ const scale=Math.min(1,640/Math.max(v.videoWidth,v.videoHeight)),w=Math.max(1,Math.round(v.videoWidth*scale)),h=Math.max(1,Math.round(v.videoHeight*scale));
+ if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;canvas._vjTime=-1;}
+ if(canvas._vjTime===v.currentTime)return canvas;
+ ctx.clearRect(0,0,w,h);ctx.drawImage(v,0,0,w,h);
+ try{const im=ctx.getImageData(0,0,w,h),p=im.data,cl=(x)=>Math.max(0,Math.min(255,x));for(let i=0;i<p.length;i+=4){let r=p[i],g=p[i+1],b=p[i+2];switch(preset){case'mono':case'noir':{const y=.2126*r+.7152*g+.0722*b,k=preset==='noir'?1.55:1;r=g=b=cl((y-128)*k+128);break;}case'invert':r=255-r;g=255-g;b=255-b;break;case'vivid':r=cl((r-128)*1.16+128);g=cl((g-128)*1.16+128);b=cl((b-128)*1.16+128);break;case'warm':r=cl(r*1.08+18);g=cl(g*1.02+5);b=cl(b*.88);break;case'cool':r=cl(r*.9);b=cl(b*1.12+8);break;case'cinema':r=cl(r*.9+12);g=cl(g*.88+8);b=cl(b*.82+5);break;case'dream':r=cl(r*1.08+12);g=cl(g*1.08+12);b=cl(b*1.08+12);break;}p[i]=r;p[i+1]=g;p[i+2]=b;}ctx.putImageData(im,0,0);canvas._vjTime=v.currentTime;return canvas;}catch(e){return v;}
+}
 function drawClip(ctx,t,c,mix=1){
  const v=t.video;if(!t.visible||v.readyState<HTMLMediaElement.HAVE_CURRENT_DATA||!v.videoWidth)return;
  const box={x:t.x*c.width,y:t.y*c.height,w:t.w*c.width,h:t.h*c.height},filter=FILTERS[state.filterPreset]||'none';
- let source=v;
- // The normal path applies the browser/GPU Canvas filter at the final draw.
- // Avoid a full-resolution intermediate canvas and CPU pixel loop on every frame.
+ let source=v,filterSupported=('filter' in ctx);
  if(state.chromaEnabled){
   const maxSide=960,scale=Math.min(1,maxSide/Math.max(v.videoWidth,v.videoHeight)),w=Math.max(1,Math.round(v.videoWidth*scale)),h=Math.max(1,Math.round(v.videoHeight*scale));
   const off=t.keyCanvas||(t.keyCanvas=document.createElement('canvas'));if(off.width!==w||off.height!==h){off.width=w;off.height=h;t.keyTime=-1;}
   const k=off.getContext('2d',{willReadFrequently:true});
   if(t.keyTime!==v.currentTime){
-   k.save();k.clearRect(0,0,w,h);k.filter=filter;k.drawImage(v,0,0,w,h);k.restore();
+   if(filterSupported){k.save();k.clearRect(0,0,w,h);k.filter=filter;k.drawImage(v,0,0,w,h);k.restore();}
+   else {k.clearRect(0,0,w,h);k.drawImage(v,0,0,w,h);if(filter!=='none')applyFallbackFilter(k,off,v,state.filterPreset);}
    try{const im=k.getImageData(0,0,w,h),p=im.data,key=rgb(state.chromaColor),tol=state.chromaTolerance*2.2;for(let i=0;i<p.length;i+=4){const dr=p[i]-key.r,dg=p[i+1]-key.g,db=p[i+2]-key.b,dist=Math.sqrt(dr*dr+dg*dg+db*db);if(dist<tol)p[i+3]=0;else if(dist<tol+28)p[i+3]=Math.min(p[i+3],Math.round(255*(dist-tol)/28));}k.putImageData(im,0,0);source=off;t.keyTime=v.currentTime;}catch(e){source=v;}
   }else source=off;
+ }else if(filter!=='none'&&!filterSupported){
+  const fc=t.filterCanvas||(t.filterCanvas=document.createElement('canvas'));source=applyFallbackFilter(fc.getContext('2d',{willReadFrequently:true}),fc,v,state.filterPreset);
  }
  ctx.save();ctx.globalAlpha=t.opacity*mix;ctx.beginPath();ctx.rect(box.x,box.y,box.w,box.h);ctx.clip();
- // If chroma is active, the filter is already baked into its small cached canvas.
- ctx.filter=state.chromaEnabled?'none':filter;
+ ctx.filter=(state.chromaEnabled||!filterSupported)?'none':filter;
  if(t.fisheye&&state.fisheye>0)drawFisheye(ctx,source,box,state.fisheye);
  else {const r=fitRect(v,box.w,box.h);ctx.drawImage(source,box.x+r.x,box.y+r.y,r.w,r.h);}
  ctx.restore();
