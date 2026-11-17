@@ -36,3 +36,10 @@ The browser build deliberately uses browser-native media decoding and Canvas com
 - Newly imported layers default to Deck A so clips are composited on top of one another by default. Assign layers to Deck B to use the crossfader.
 - Local media remains in the browser; project metadata remembers layer/column placement, but media files must be selected again after a reload.
 - This is a browser-oriented implementation of the OpenVJ clip-grid workflow, not a complete port of every native OpenVJ feature (e.g. native layer groups/effect chains and deck tabs).
+
+
+## Vereinfachte Oberfläche (BETA v0.5.0)
+- Der Hauptbildschirm führt durch vier Schritte: Medien laden, Clips auswählen, Vorschau prüfen und Übergang in die Live-Ausgabe ausführen.
+- Die Vorschau und die Live-Ausgabe sind klar beschriftet und bleiben nebeneinander sichtbar.
+- Häufige Aktionen stehen direkt bereit. Erweiterte Layer-Regler, Crossfader, Beat-Sync, MIDI und zusätzliche Quellen sind standardmäßig eingeklappt.
+- Projektverwaltung, Kamera/Generatoren und Mikrofonzugriff liegen unter „Weitere Quellen & Projekt“.
