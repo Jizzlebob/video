@@ -43,3 +43,10 @@ The browser build deliberately uses browser-native media decoding and Canvas com
 - Die Vorschau und die Live-Ausgabe sind klar beschriftet und bleiben nebeneinander sichtbar.
 - Häufige Aktionen stehen direkt bereit. Erweiterte Layer-Regler, Crossfader, Beat-Sync, MIDI und zusätzliche Quellen sind standardmäßig eingeklappt.
 - Projektverwaltung, Kamera/Generatoren und Mikrofonzugriff liegen unter „Weitere Quellen & Projekt“.
+
+
+## Layer und Touch-Bedienung (BETA v0.6.0)
+- Mit „＋ Layer hinzufügen“ lässt sich jederzeit eine neue Ebene per Knopfdruck erstellen. Ist ein Clip ausgewählt, wird er direkt in die neue Ebene verschoben; andernfalls erscheint eine leere Ebene mit freien Clip-Slots.
+- Clips lassen sich mit Maus, Finger oder Apple Pencil aus der Medienliste in einen Slot, auf eine vorhandene Ebene oder auf die Fläche „Neue Ebene“ ziehen.
+- Clips lassen sich auch direkt zwischen Clip-Slots verschieben. Pointer-Events unterstützen Touch-Geräte unabhängig vom HTML5-Drag-and-drop.
+- Leere Ebenen können über das × am Layer-Namen entfernt werden.
