@@ -5,35 +5,93 @@ const uid=()=>globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random()}
 const BEATS=[.25,.5,1,2,4,8,16,32];
 const OPS={normal:'source-over',add:'lighter',screen:'screen',multiply:'multiply',overlay:'overlay',difference:'difference',lighten:'lighten',darken:'darken',subtract:'difference'};
 function createImageMedia(file,url){const img=new Image();img.src=url;img.decoding='async';img.loading='eager';img.setAttribute('fetchpriority','high');Object.defineProperties(img,{videoWidth:{get:()=>img.naturalWidth},videoHeight:{get:()=>img.naturalHeight},readyState:{get:()=>img.complete&&img.naturalWidth?4:0},paused:{get:()=>false}});img.volume=.8;img.play=()=>Promise.resolve();img.pause=()=>{};return img}
+function keepNativeGifAnimated(t){
+ const img=t.nativeGifImage||t.video;
+ if(!img)return false;
+ t.video=img;t.gifDecoder=null;t.gifFramePending=false;
+ // Keep the source image in the document so Safari/WebKit continues advancing
+ // its native GIF timeline while the canvas renderer samples it with drawImage().
+ img.setAttribute('aria-hidden','true');
+ img.style.position='fixed';img.style.left='0';img.style.top='0';
+ img.style.width='2px';img.style.height='2px';img.style.opacity='0.001';
+ img.style.pointerEvents='none';img.style.zIndex='-1';
+ if(!img.isConnected)document.body.append(img);
+ return true;
+}
+function gifFrameDuration(frame){
+ const micros=Number(frame&&frame.duration);
+ return Number.isFinite(micros)&&micros>0?Math.max(20,micros/1000):100;
+}
 async function setupGifPlayback(file,t){
+ const nativeImage=t.video;
+ t.nativeGifImage=nativeImage;
+ if(nativeImage&&nativeImage.tagName==='IMG'){
+  nativeImage.addEventListener('load',()=>{}, {once:true});
+  // Native playback remains available even when WebCodecs is unsupported.
+  keepNativeGifAnimated(t);
+ }
  if(typeof ImageDecoder!=='function')return;
- let decoder=null;
+ let decoder=null,firstFrame=null;
  try{
+  if(typeof ImageDecoder.isTypeSupported==='function'&&!await ImageDecoder.isTypeSupported('image/gif'))return;
   decoder=new ImageDecoder({data:await file.arrayBuffer(),type:'image/gif'});
   await decoder.tracks.ready;
   const track=decoder.tracks.selectedTrack,frameCount=track?.frameCount||0;
-  if(!frameCount)throw new Error('GIF enthält keine decodierbaren Frames');
+  if(frameCount<2){decoder.close();return;}
   const first=await decoder.decode({frameIndex:0,completeFramesOnly:true});
-  const frame=first.image,canvas=document.createElement('canvas');
-  canvas.width=frame.displayWidth||frame.codedWidth;canvas.height=frame.displayHeight||frame.codedHeight;
-  const ctx=canvas.getContext('2d');ctx.drawImage(frame,0,0,canvas.width,canvas.height);
-  const duration=Math.max(20,(frame.duration||100000)/1000);frame.close();
-  Object.defineProperties(canvas,{videoWidth:{get:()=>canvas.width},videoHeight:{get:()=>canvas.height},readyState:{get:()=>4},paused:{get:()=>false}});
+  firstFrame=first.image;
+  const width=firstFrame.displayWidth||firstFrame.codedWidth;
+  const height=firstFrame.displayHeight||firstFrame.codedHeight;
+  if(!width||!height)throw new Error('GIF-Frame hat keine gültige Größe');
+  const canvas=document.createElement('canvas');
+  canvas.width=width;canvas.height=height;
+  const ctx=canvas.getContext('2d');
+  if(!ctx)throw new Error('Canvas-Kontext für GIF fehlt');
+  ctx.drawImage(firstFrame,0,0,width,height);
+  const duration=gifFrameDuration(firstFrame);
+  Object.defineProperties(canvas,{
+   videoWidth:{get:()=>canvas.width},videoHeight:{get:()=>canvas.height},
+   readyState:{get:()=>4},paused:{get:()=>false}
+  });
   canvas.volume=.8;canvas.play=()=>Promise.resolve();canvas.pause=()=>{};
-  t.video=canvas;t.gifDecoder=decoder;t.gifFrameCount=frameCount;t.gifFrameIndex=0;t.gifNextAt=performance.now()+duration;t.gifFramePending=false;t.gifDuration=duration;
-  status('Animiertes GIF bereit: '+file.name);
- }catch(error){try{decoder?.close()}catch(e){};t.gifDecoder=null;status('GIF läuft über die native Bildwiedergabe: '+file.name,true)}
+  t.video=canvas;t.gifDecoder=decoder;t.gifFrameCount=frameCount;
+  t.gifFrameIndex=0;t.gifNextAt=performance.now()+duration;
+  t.gifFramePending=false;t.gifDuration=duration;
+  t.gifNativeFallback=false;
+  status('Animiertes GIF aktiv: '+file.name);
+ }catch(error){
+  try{firstFrame?.close()}catch(e){}
+  try{decoder?.close()}catch(e){}
+  keepNativeGifAnimated(t);t.gifNativeFallback=true;
+  status('GIF nutzt native Animation: '+file.name);
+ }finally{
+  try{firstFrame?.close()}catch(e){}
+ }
 }
-async function updateGifFrames(time){
+function updateGifFrames(time){
  for(const t of state.tracks){
-  const d=t.gifDecoder;if(!d||t.type!=='image'||t.gifFramePending||time<t.gifNextAt)continue;
+  const decoder=t.gifDecoder;
+  if(!decoder||t.type!=='image'||t.gifFramePending||time<t.gifNextAt)continue;
   t.gifFramePending=true;
   const next=(t.gifFrameIndex+1)%t.gifFrameCount;
-  d.decode({frameIndex:next,completeFramesOnly:true}).then(result=>{
-   const frame=result.image,ctx=t.video.getContext('2d');
-   ctx.clearRect(0,0,t.video.width,t.video.height);ctx.drawImage(frame,0,0,t.video.width,t.video.height);
-   t.gifFrameIndex=next;t.gifDuration=Math.max(20,(frame.duration||100000)/1000);t.gifNextAt=performance.now()+t.gifDuration;frame.close();
-  }).catch(()=>{try{d.close()}catch(e){}t.gifDecoder=null}).finally(()=>{t.gifFramePending=false});
+  decoder.decode({frameIndex:next,completeFramesOnly:true}).then(result=>{
+   const frame=result.image;
+   try{
+    const canvas=t.video,ctx=canvas&&canvas.getContext('2d');
+    if(!ctx)throw new Error('GIF-Ausgabefläche fehlt');
+    const width=frame.displayWidth||frame.codedWidth;
+    const height=frame.displayHeight||frame.codedHeight;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(frame,0,0,width,height,0,0,canvas.width,canvas.height);
+    t.gifFrameIndex=next;t.gifDuration=gifFrameDuration(frame);
+    t.gifNextAt=performance.now()+t.gifDuration;
+   }finally{try{frame.close()}catch(e){}}
+  }).catch(error=>{
+   try{decoder.close()}catch(e){}
+   // Critical: never leave the one-frame decoder canvas as a frozen GIF.
+   keepNativeGifAnimated(t);t.gifNativeFallback=true;t.gifError=error?.message||'Frame decode failed';
+   status('GIF-Decoder gewechselt – native Animation wird verwendet: '+(t.fileName||t.name));
+  }).finally(()=>{t.gifFramePending=false});
  }
 }
 function createGenerator(kind){
