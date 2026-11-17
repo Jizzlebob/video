@@ -337,7 +337,7 @@ function renderMidiMappingRows(){
  });
 }
 function scenePayload(){
- return {activeColumns:{...state.activeColumns},layerIds:[...(state.layerIds||[])],tracks:state.tracks.map(t=>({id:t.id,key:t.fileName||t.name,visible:!!t.visible,column:Number(t.column||0),layerId:t.layerId||t.id,deck:t.deck,opacity:t.opacity,blendMode:t.blendMode||'normal'})),strobe:state.strobe,strobeRate:state.strobeRate,strobeEnabled:state.strobeEnabled,visualizerStyle:state.visualizerStyle,visualizerColorA:state.visualizerColorA,visualizerColorB:state.visualizerColorB,visualizerRect:{...state.visualizerRect},filterPreset:state.filterPreset,chromaEnabled:state.chromaEnabled,chromaColor:state.chromaColor,chromaTolerance:state.chromaTolerance};
+ return {activeColumns:{...state.activeColumns},layerIds:[...(state.layerIds||[])],tracks:state.tracks.map(t=>({id:t.id,key:t.fileName||t.name,visible:!!t.visible,column:Number(t.column||0),layerId:t.layerId||t.id,deck:t.deck,opacity:t.opacity,blendMode:t.blendMode||'normal'})),strobe:state.strobe,strobeRate:state.strobeRate,strobeEnabled:state.strobeEnabled,crossfade:state.crossfade,transitionStyle:state.transitionStyle,transitionDuration:state.transitionDuration,visualizerStyle:state.visualizerStyle,visualizerColorA:state.visualizerColorA,visualizerColorB:state.visualizerColorB,visualizerRect:{...state.visualizerRect},filterPreset:state.filterPreset,chromaEnabled:state.chromaEnabled,chromaColor:state.chromaColor,chromaTolerance:state.chromaTolerance};
 }
 function captureScene(slot){
  userScenes[String(slot)]={...scenePayload(),name:'Szene '+slot,savedAt:Date.now()};
@@ -347,9 +347,9 @@ function recallScene(slot){
  const sceneData=userScenes[String(slot)];if(!sceneData){status('Szene '+slot+' ist noch leer.',true);return false;}
  state.activeColumns={...(sceneData.activeColumns||{})};state.layerIds=[...(sceneData.layerIds||state.layerIds||[])];
  (sceneData.tracks||[]).forEach(saved=>{const t=state.tracks.find(x=>x.id===saved.id||(saved.key&&(x.fileName||x.name)===saved.key));if(!t)return;for(const k of ['visible','column','layerId','deck','opacity','blendMode'])if(saved[k]!==undefined)t[k]=saved[k];});
- for(const k of ['strobe','strobeRate','strobeEnabled','visualizerStyle','visualizerColorA','visualizerColorB','filterPreset','chromaEnabled','chromaColor','chromaTolerance'])if(sceneData[k]!==undefined)state[k]=sceneData[k];
+ for(const k of ['strobe','strobeRate','strobeEnabled','crossfade','transitionStyle','transitionDuration','visualizerStyle','visualizerColorA','visualizerColorB','filterPreset','chromaEnabled','chromaColor','chromaTolerance'])if(sceneData[k]!==undefined)state[k]=sceneData[k];
  if(sceneData.visualizerRect)state.visualizerRect={...sceneData.visualizerRect};
- if(strobe)strobe.value=String(state.strobe);if(rate)rate.value=String(state.strobeRate);if(strobeToggle)strobeToggle.checked=!!state.strobeEnabled;if(vizColorA)vizColorA.value=state.visualizerColorA;if(vizColorB)vizColorB.value=state.visualizerColorB;if(visual)visual.value=state.visualizerStyle;if(chroma)chroma.checked=!!state.chromaEnabled;if(chromaColor)chromaColor.value=state.chromaColor;if(tolerance)tolerance.value=String(state.chromaTolerance);
+ if(document.getElementById('filterPreset'))document.getElementById('filterPreset').value=state.filterPreset||'none';if(transitionStyle)transitionStyle.value=state.transitionStyle||'mix';if(transitionDuration)transitionDuration.value=String(state.transitionDuration||1000);if(strobe)strobe.value=String(state.strobe);if(rate)rate.value=String(state.strobeRate);if(strobeToggle)strobeToggle.checked=!!state.strobeEnabled;if(vizColorA)vizColorA.value=state.visualizerColorA;if(vizColorB)vizColorB.value=state.visualizerColorB;if(visual)visual.value=state.visualizerStyle;if(chroma)chroma.checked=!!state.chromaEnabled;if(chromaColor)chromaColor.value=state.chromaColor;if(tolerance)tolerance.value=String(state.chromaTolerance);
  controls();render();startTransition();persistSettings();status('Szene '+slot+' geladen · Übergang läuft.');
  return true;
 }
