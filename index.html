@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#101114" />
   <title>VJ Studio — Live Video Mixer</title>
-  <link rel="stylesheet" href="./style.css?v=beta-0.5.0" />
+  <link rel="stylesheet" href="./style.css?v=beta-0.6.0" />
   <style>
     /* Immediate visual fallback while the versioned stylesheet loads. */
     html,body{margin:0;min-height:100%;background:#101114;color:#e9e9eb;font:13px/1.4 Inter,system-ui,sans-serif}
@@ -22,7 +22,7 @@
   <header class="topbar">
     <a class="brand" href="#"><span class="brand-icon">VJ</span><span>VJ STUDIO <small>LIVE VIDEO MIXER</small></span></a>
     <div class="top-actions">
-      <span class="version-badge">BETA v0.5.0</span>
+      <span class="version-badge">BETA v0.6.0</span>
       <details class="top-settings"><summary>Ansicht</summary><div><label class="quality-control">Bildqualität <select id="renderQuality"><option value="540">Schnell · 540p</option><option value="720" selected>Ausgewogen · 720p</option><option value="1080">Hoch · 1080p</option></select></label></div></details>
       <button id="openEffects" class="toolbar-button">Effekte</button>
       <button id="openOutput" class="toolbar-button primary-utility">Ausgabe-Fenster</button>
@@ -55,9 +55,9 @@
         <div class="workflow-steps"><span><b>1</b> Medien laden</span><i>→</i><span><b>2</b> Clips auswählen</span><i>→</i><span><b>3</b> In die Ausgabe übernehmen</span></div>
       </div>
       <section class="panel clip-grid-panel">
-        <div class="panel-title"><div class="section-title"><span class="step-number">2</span><div><span class="eyebrow">CLIPS & EBENEN</span><h2>Deine Szenen</h2><p>Wähle einen Clip. Er erscheint zuerst nur in der Vorschau.</p></div></div><div class="grid-toolbar"><button id="addGridColumn" class="subtle-button" type="button">＋ Spalte hinzufügen</button></div></div>
+        <div class="panel-title"><div class="section-title"><span class="step-number">2</span><div><span class="eyebrow">CLIPS & EBENEN</span><h2>Deine Szenen</h2><p>Wähle einen Clip. Er erscheint zuerst nur in der Vorschau.</p></div></div><div class="grid-toolbar"><button id="addGridLayer" class="subtle-button add-layer-button" type="button">＋ Layer hinzufügen</button><button id="addGridColumn" class="subtle-button" type="button">＋ Spalte</button></div></div>
         <div id="clipGrid" class="clip-grid" aria-label="Clip Grid" style="--grid-columns:4"></div>
-        <p class="grid-hint">Zeilen sind Ebenen, Spalten sind Clip-Plätze. Tippe auf eine belegte Kachel, um sie in der Vorschau vorzubereiten.</p>
+        <p class="grid-hint">Tippe auf „＋ Layer“, um eine Ebene anzulegen. Ziehe Clips mit Maus oder Finger in einen freien Platz.</p>
       </section>
       <section class="monitor-row" aria-label="Vorschau und Live-Ausgabe">
         <article class="panel monitor preview-monitor"><div class="monitor-title"><div><span class="eyebrow">3 · VORBEREITEN</span><h2>Vorschau</h2></div><div class="monitor-tools"><span id="previewLabel" class="monitor-info">Clip auswählen</span><button id="previewFullscreen" class="subtle-button" title="Vorschau vergrößern">⛶</button></div></div><div class="canvas-wrap"><canvas id="previewCanvas" width="1280" height="720"></canvas><span class="corner-label">VORSCHAU · NOCH NICHT LIVE</span></div></article>
@@ -80,6 +80,6 @@
     </section>
   </main>
   <dialog id="effectsDialog" class="effects-dialog"><div class="dialog-head"><div><span class="eyebrow">LIVE PROCESSING</span><h2>Video Effekte & Filter</h2></div><button id="closeEffects" class="toolbar-button">Schließen ✕</button></div><div id="effectsPopupContent"></div></dialog>
-  <script src="./script.js?v=beta-0.5.0"></script>
+  <script src="./script.js?v=beta-0.6.0"></script>
 </body>
 </html>
