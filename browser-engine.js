@@ -30,16 +30,98 @@ function keepNativeGifAnimated(t){
  else sizeSource();
  return true;
 }
+function readGifSubBlocks(bytes,state){
+ const parts=[];let total=0;
+ while(state.p<bytes.length){const size=bytes[state.p++];if(!size)break;const part=bytes.subarray(state.p,state.p+size);parts.push(part);total+=size;state.p+=size;}
+ const out=new Uint8Array(total);let offset=0;for(const part of parts){out.set(part,offset);offset+=part.length;}return out;
+}
+function decodeGifLzw(data,minCodeSize,expected){
+ const clear=1<<minCodeSize,end=clear+1,table=new Array(4096),out=new Uint8Array(expected);
+ let codeSize=minCodeSize+1,nextCode=end+1,bit=0,old=null,first=0,pos=0;
+ const reset=()=>{for(let i=0;i<clear;i++)table[i]=[i];codeSize=minCodeSize+1;nextCode=end+1;old=null;};
+ reset();
+ while(bit+codeSize<=data.length*8&&pos<expected){
+  let code=0;for(let i=0;i<codeSize;i++)code|=((data[(bit+i)>>3]>>((bit+i)&7))&1)<<i;bit+=codeSize;
+  if(code===clear){reset();continue;}if(code===end)break;
+  let entry;
+  if(code<nextCode&&table[code])entry=table[code];
+  else if(code===nextCode&&old!==null)entry=table[old].concat(first);
+  else throw new Error("Ungültiger GIF-LZW-Code");
+  for(let i=0;i<entry.length&&pos<expected;i++)out[pos++]=entry[i];
+  first=entry[0];
+  if(old!==null&&nextCode<4096){table[nextCode++]=table[old].concat(first);if(nextCode===(1<<codeSize)&&codeSize<12)codeSize++;}
+  old=code;
+ }
+ if(pos!==expected)throw new Error("GIF-Frame unvollständig");
+ return out;
+}
+function decodeGifFile(buffer){
+ const bytes=new Uint8Array(buffer),state={p:0};
+ const read=()=>{if(state.p>=bytes.length)throw new Error("GIF unerwartet abgeschnitten");return bytes[state.p++];};
+ const u16=()=>read()|(read()<<8);
+ const signature=String.fromCharCode(...bytes.subarray(0,6));if(signature!=="GIF87a"&&signature!=="GIF89a")throw new Error("Keine gültige GIF-Datei");
+ state.p=6;const width=u16(),height=u16(),packed=read(),background=read();read();
+ if(!width||!height||width*height>16000000)throw new Error("GIF-Abmessungen ungültig");
+ const readPalette=size=>{const p=new Uint8Array(size*3);for(let i=0;i<p.length;i++)p[i]=read();return p;};
+ const globalPalette=(packed&128)?readPalette(1<<((packed&7)+1)):null;
+ const output=document.createElement("canvas");output.width=width;output.height=height;
+ const out=output.getContext("2d",{willReadFrequently:true});if(!out)throw new Error("Canvas nicht verfügbar");
+ out.clearRect(0,0,width,height);
+ let gce={delay:100,transparent:null,disposal:0},frames=[],previous=null,done=false;
+ while(state.p<bytes.length&&!done){
+  const marker=read();
+  if(marker===0x3b)break;
+  if(marker===0x21){
+   const label=read();
+   if(label===0xf9){const size=read();if(size!==4)throw new Error("GIF-Steuerblock ungültig");const flags=read(),delay=u16()*10,transparent=read();read();gce={delay:delay||100,transparent:(flags&1)?transparent:null,disposal:(flags>>2)&7};}
+   else readGifSubBlocks(bytes,state);
+   continue;
+  }
+  if(marker!==0x2c)throw new Error("Unbekannter GIF-Block");
+  const left=u16(),top=u16(),fw=u16(),fh=u16(),flags=read();
+  if(!fw||!fh||left+fw>width||top+fh>height)throw new Error("GIF-Frame außerhalb der Bildfläche");
+  const palette=(flags&128)?readPalette(1<<((flags&7)+1)):globalPalette;
+  if(!palette)throw new Error("GIF-Farbpalette fehlt");
+  const min=read(),compressed=readGifSubBlocks(bytes,state);
+  const indices=decodeGifLzw(compressed,min,fw*fh),rgba=new Uint8ClampedArray(fw*fh*4);
+  const rows=[];if(flags&64){for(let y=0;y<fh;y++)rows.push(y);const order=[];for(const [first,step] of [[0,8],[4,8],[2,4],[1,2]])for(let y=first;y<fh;y+=step)order.push(y);rows.splice(0,rows.length,...order);}
+  else for(let y=0;y<fh;y++)rows.push(y);
+  let src=0;for(const y of rows)for(let x=0;x<fw;x++){const index=indices[src++],dst=(y*fw+x)*4;if(index===gce.transparent)continue;const p=index*3;if(p+2>=palette.length)throw new Error("GIF-Palettenindex ungültig");rgba[dst]=palette[p];rgba[dst+1]=palette[p+1];rgba[dst+2]=palette[p+2];rgba[dst+3]=255;}
+  if(previous?.disposal===2){out.clearRect(previous.left,previous.top,previous.width,previous.height);}
+  else if(previous?.disposal===3&&previous.restore){out.clearRect(0,0,width,height);out.drawImage(previous.restore,0,0);}
+  const restore=gce.disposal===3?document.createElement("canvas"):null;
+  if(restore){restore.width=width;restore.height=height;restore.getContext("2d").drawImage(output,0,0);}
+  const patch=document.createElement("canvas");patch.width=fw;patch.height=fh;
+  patch.getContext("2d").putImageData(new ImageData(rgba,fw,fh),0,0);out.drawImage(patch,left,top);
+  const snapshot=document.createElement("canvas");snapshot.width=width;snapshot.height=height;snapshot.getContext("2d").drawImage(output,0,0);
+  frames.push({canvas:snapshot,duration:Math.max(20,gce.delay||100)});
+  previous={left,top,width:fw,height:fh,disposal:gce.disposal,restore};gce={delay:100,transparent:null,disposal:0};
+ }
+ if(!frames.length)throw new Error("GIF enthält keine Frames");
+ return{width,height,frames,totalDuration:frames.reduce((sum,frame)=>sum+frame.duration,0)};
+}
 async function setupGifPlayback(file,t){
- // Native <img> animation is the compatibility path for Safari, iPadOS and
- // browsers without a stable ImageDecoder implementation.
- t.nativeGifImage=t.video;
- keepNativeGifAnimated(t);
- status('GIF-Wiedergabe über Browser-Animation: '+file.name);
+ try{
+  const decoded=decodeGifFile(await file.arrayBuffer());
+  const canvas=document.createElement("canvas");canvas.width=decoded.width;canvas.height=decoded.height;
+  Object.defineProperties(canvas,{videoWidth:{get:()=>canvas.width},videoHeight:{get:()=>canvas.height},readyState:{get:()=>4},paused:{get:()=>false}});
+  canvas.volume=.8;canvas.play=()=>Promise.resolve();canvas.pause=()=>{};
+  t.gifFrames=decoded.frames;t.gifTotalDuration=decoded.totalDuration;t.gifStartedAt=performance.now();t.gifFrameIndex=0;
+  canvas.getContext("2d").drawImage(decoded.frames[0].canvas,0,0);t.video=canvas;t.gifDecoder=true;t.gifNativeImage?.remove();t.nativeGifImage?.remove();
+  status("GIF-Frames dekodiert: "+file.name+" · "+decoded.frames.length+" Frames");
+ }catch(error){
+  t.gifError=error?.message||"GIF konnte nicht dekodiert werden";
+  keepNativeGifAnimated(t);status("GIF-Decoder fehlgeschlagen: "+t.gifError,true);
+ }
 }
 function updateGifFrames(time){
- // The renderer samples the live <img> frame on every animation tick.
- // No frame-zero canvas or decoder cache is used for GIFs.
+ for(const t of state.tracks){
+  if(!t.gifDecoder||!t.gifFrames?.length||t.type!=="image")continue;
+  const elapsed=((performance.now()-t.gifStartedAt)%t.gifTotalDuration+t.gifTotalDuration)%t.gifTotalDuration;
+  let cursor=0,index=0;for(;index<t.gifFrames.length-1;index++){cursor+=t.gifFrames[index].duration;if(elapsed<cursor)break;}
+  if(index===t.gifFrameIndex)continue;
+  const ctx=t.video.getContext("2d");ctx.clearRect(0,0,t.video.width,t.video.height);ctx.drawImage(t.gifFrames[index].canvas,0,0);t.gifFrameIndex=index;
+ }
 }
 function createGenerator(kind){
  const c=document.createElement('canvas');c.width=640;c.height=360;
