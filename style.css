@@ -307,3 +307,28 @@ body{padding:0 16px 24px;background:#0e1012}
 
 /* BETA 0.7.3 — mic controls directly below activation and effects popup */
 .audio-global .mic-global-controls{display:grid;grid-template-columns:minmax(170px,220px) minmax(100px,1fr);gap:9px 14px;align-items:center;margin-bottom:10px}.audio-global .mic-global-controls .meter{grid-column:2;grid-row:1}.audio-global .mic-global-controls>p{grid-column:1/-1;margin:0}.audio-global .mic-level-controls{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding-top:3px}.audio-global .mic-level-controls .effect-control{display:flex;flex-direction:column;gap:5px}.effects-dialog .video-effects-deck{display:block;padding:14px;border:0;background:transparent}.effects-dialog .video-effects-deck .effect-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.effects-dialog .video-effects-deck .effect-control{display:flex;flex-direction:column;gap:6px}@media(max-width:520px){.audio-global .mic-global-controls{grid-template-columns:1fr}.audio-global .mic-global-controls .meter{grid-column:1;grid-row:auto}.audio-global .mic-level-controls,.effects-dialog .video-effects-deck .effect-controls{grid-template-columns:1fr}}
+
+/* BETA 0.8.0 — settings, keybind, MIDI and scene manager */
+.settings-dialog{width:min(900px,calc(100vw - 24px));max-width:900px;max-height:min(88vh,900px);padding:0;border:1px solid #42434a;border-radius:10px;background:#191b1e;color:#e9e9eb;box-shadow:0 24px 80px #000b}
+.settings-dialog::backdrop{background:#050608c9;backdrop-filter:blur(5px)}
+.settings-dialog .dialog-head{position:sticky;top:0;z-index:2;padding:14px 17px;background:#1d2022;border-bottom:1px solid #36383d}
+.settings-dialog .dialog-head h2{margin:3px 0 0;font-size:19px}
+.settings-content{display:flex;flex-direction:column;gap:14px;padding:14px;max-height:calc(88vh - 70px);overflow:auto}
+.settings-section{padding:14px;border:1px solid #34363b;border-radius:8px;background:#202226}
+.settings-section h3{margin:0 0 10px;font-size:13px;letter-spacing:.02em}
+.settings-section>p{margin:8px 0 0}
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.settings-grid label{display:flex;flex-direction:column;gap:6px;color:#c9cbd0;font-size:11px}
+.settings-grid select{min-height:36px;padding:7px 9px;border:1px solid #45474d;border-radius:5px;background:#17191c;color:#f0f0f1;font:inherit}
+.settings-section-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+.settings-section-heading h3{margin:0 0 4px}
+.settings-section-heading p{margin:0}
+.mapping-list,.scene-list{display:flex;flex-direction:column;gap:6px}
+.mapping-row,.scene-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,220px) 34px;gap:8px;align-items:center;padding:7px 8px;border:1px solid #383a40;border-radius:6px;background:#191b1e}
+.mapping-row strong,.scene-row strong{font-size:11px;font-weight:650}
+.mapping-row .mapping-capture{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mapping-row .mapping-clear{padding:6px 0}
+.scene-row{grid-template-columns:minmax(0,1fr) auto auto}
+.scene-row button{font-size:10px;padding:7px 9px}
+.scene-row button:disabled{opacity:.4;cursor:not-allowed}
+@media(max-width:560px){.settings-content{padding:9px}.settings-section{padding:10px}.settings-grid{grid-template-columns:1fr}.settings-section-heading{align-items:flex-start;flex-direction:column}.mapping-row{grid-template-columns:minmax(0,1fr) auto 30px}.mapping-row .mapping-capture{max-width:135px;font-size:9px}.scene-row{grid-template-columns:minmax(0,1fr) auto}.scene-row strong{grid-column:1/-1}.scene-row button{min-width:0}.settings-dialog .dialog-head{padding:11px}}
