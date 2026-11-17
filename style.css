@@ -13,3 +13,5 @@
 .track-actions .track-sync{max-width:88px}
 .audio-deck .deck-heading{flex-wrap:wrap}
 @media(max-width:820px){.browser-source-actions{grid-template-columns:1fr 1fr}.browser-source-actions select{grid-column:1/-1;grid-row:1}.track-actions{gap:4px}.track-actions select{font-size:10px;padding:4px}}
+
+.quality-control{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.1em}.quality-control select{max-width:155px;background:#17181c;color:var(--text);border:1px solid #38393e;border-radius:4px;padding:6px;font:inherit;letter-spacing:0}
