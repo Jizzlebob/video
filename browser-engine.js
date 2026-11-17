@@ -19,7 +19,11 @@ function keepNativeGifAnimated(t){
  img.style.position='fixed';img.style.left='0';img.style.top='0';
  img.style.width=(img.naturalWidth||1)+'px';img.style.height=(img.naturalHeight||1)+'px';
  img.style.opacity='0.001';img.style.visibility='visible';
- img.style.pointerEvents='none';img.style.zIndex='-1';
+ img.style.pointerEvents='none';
+ // Keep the animated source in the top compositing layer. A negative z-index
+ // can place it behind the document background, where Safari may stop painting
+ // animated GIF frames even though the image remains connected to the DOM.
+ img.style.zIndex='2147483647';
  img.style.display='block';img.style.maxWidth='none';img.style.maxHeight='none';
  if(!img.isConnected)document.body.append(img);
  if(!img.complete||!img.naturalWidth)img.addEventListener('load',sizeSource,{once:true});
