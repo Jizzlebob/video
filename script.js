@@ -1,6 +1,6 @@
 const previewCanvas=document.getElementById('previewCanvas'),previewCtx=previewCanvas.getContext('2d');const outputCanvas=document.getElementById('mixCanvas'),outputCtx=outputCanvas.getContext('2d');const tracksElement=document.getElementById('tracks'),clipGridElement=document.getElementById('clipGrid'),mediaList=document.getElementById('mediaList'),videoInput=document.getElementById('videoInput'),importStatus=document.getElementById('importStatus');const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));const supportedVideo=/\.(mp4|m4v|webm|mov|ogv|ogg|mkv|avi)$/i;let rustCore=null;import('./pkg/vj_core.js').then(async module=>{await module.default();rustCore=module;}).catch(()=>{});const PROJECT_KEY='vj-studio-project-v1';let savedProject=null;try{savedProject=JSON.parse(localStorage.getItem(PROJECT_KEY)||'null')}catch(e){}const state={tracks:[],selectedId:null,activeColumns:savedProject?.activeColumns||{},gridColumns:savedProject?.gridColumns||4,layerIds:Array.isArray(savedProject?.layerIds)?savedProject.layerIds:[],strobe:.42,strobeRate:4,strobeEnabled:false,visualizerColorA:'#55e8d7',visualizerColorB:'#bd70ff',crossfade:50,visualizerStyle:'bars',micGain:12,micSensitivity:2,noiseFloor:.012,micEnabled:false,micStream:null,audioContext:null,analyser:null,timeData:null,freqData:null,micLevel:0,micPeak:0,lastBeat:0,lastAbove:false,prevBass:0,bassFloor:0.012,strobeUntil:0,beatBpm:0,beatPeriod:0,beatConfidence:0,lastBeatAt:0,nextBeatAt:0,lastOnsetAt:0,prevSpectrum:null,spectrumPrimed:false,floatFreqData:null,fluxMean:.25,fluxDeviation:.8,bassNoiseDb:-94,strobePulseUntil:0,lastStrobeAt:-1e9,outputWindow:null,screens:[],chromaEnabled:false,chromaColor:'#00ff00',chromaTolerance:35,filterPreset:'none',visualizerRect:{x:.1,y:.68,w:.8,h:.25},drag:null,programState:null,transitionFrom:null,transitionTarget:null,transitionProgress:0,transitioning:false,transitionStarted:0,transitionDuration:1000,transitionStyle:'mix'};
 let browserEngine=null;
-import('./browser-engine.js?v=beta-0.8.5').then(m=>{browserEngine=m.initBrowserEngine({state,render,status,saveProject:()=>saveProject(),savedProject});}).catch(e=>status('Browser Engine konnte nicht geladen werden: '+e.message,true));
+import('./browser-engine.js?v=beta-0.8.6').then(m=>{browserEngine=m.initBrowserEngine({state,render,status,saveProject:()=>saveProject(),savedProject});}).catch(e=>status('Browser Engine konnte nicht geladen werden: '+e.message,true));
 function status(message,error=false){importStatus.textContent=message;importStatus.classList.toggle('error',error)}function fitRect(v,w,h){const ratio=v.videoWidth/v.videoHeight,target=w/h;let dw=w,dh=h;if(ratio>target)dh=w/ratio;else dw=h*ratio;return{x:(w-dw)/2,y:(h-dh)/2,w:dw,h:dh}}function backdrop(ctx,c){const g=ctx.createLinearGradient(0,0,c.width,c.height);g.addColorStop(0,'#171627');g.addColorStop(.52,'#13181d');g.addColorStop(1,'#071716');ctx.fillStyle=g;ctx.fillRect(0,0,c.width,c.height)}function rgb(hex){return{r:parseInt(hex.slice(1,3),16),g:parseInt(hex.slice(3,5),16),b:parseInt(hex.slice(5,7),16)}}
 const FILTERS={none:'none',cinema:'contrast(1.18) saturate(.82) sepia(.12)',vivid:'contrast(1.16) saturate(1.65)',mono:'grayscale(1)',noir:'grayscale(1) contrast(1.55)',dream:'brightness(1.12) saturate(1.35)',warm:'sepia(.28) saturate(1.25)',cool:'hue-rotate(18deg) saturate(1.18)',invert:'invert(1)'};
 function detectCanvasFilter(){try{const c=document.createElement('canvas');c.width=c.height=1;const x=c.getContext('2d',{willReadFrequently:true});x.fillStyle='#fff';x.fillRect(0,0,1,1);x.filter='invert(1)';x.fillRect(0,0,1,1);x.filter='none';return x.getImageData(0,0,1,1).data[0]<32;}catch(e){return false;}}
@@ -338,7 +338,7 @@ function renderMidiMappingRows(){
   row.append(name,capture,clear);root.append(row);
  });
  const heading=document.createElement('p');heading.className='muted small';heading.textContent='MIDI-Fader · kontinuierliche CC-Steuerung';root.append(heading);
- const faderLabels={crossfade:'Crossfader',strobeRate:'Strobe Rate',strobeIntensity:'Strobe Intensität'};
+ const faderLabels={crossfade:'Crossfader',transitionProgress:'Übergang (Preview → Live)',strobeRate:'Strobe Rate',strobeIntensity:'Strobe Intensität'};
  for(const [id,label] of Object.entries(faderLabels)){
   const row=document.createElement('div');row.className='mapping-row';
   const name=document.createElement('strong');name.textContent=label;
@@ -410,7 +410,7 @@ function midiMessage(event){
   if(selected&&selected!==event.currentTarget.id)return;
   if(type!=='cc')return;
   midiFaderMappings[pendingMidiControl]={type:'cc',channel,number,deviceId:selected||null,deviceName:selected?(event.currentTarget.name||''):''};
-  const label={crossfade:'Crossfader',strobeRate:'Strobe Rate',strobeIntensity:'Strobe Intensität'}[pendingMidiControl];
+  const label={crossfade:'Crossfader',transitionProgress:'Übergang (Preview → Live)',strobeRate:'Strobe Rate',strobeIntensity:'Strobe Intensität'}[pendingMidiControl];
   pendingMidiControl=null;persistSettings();renderMidiMappingRows();
   const info=document.getElementById('midiSettingsStatus');if(info)info.textContent='MIDI-Fader gelernt: '+label+' · '+midiLabel(midiFaderMappings[Object.keys(midiFaderMappings).find(k=>midiFaderMappings[k]?.number===number&&midiFaderMappings[k]?.channel===channel)]);
   return;
@@ -429,6 +429,7 @@ function midiMessage(event){
    if(m&&m.number===number&&m.channel===channel&&(!m.deviceId||m.deviceId===event.currentTarget.id)){
     const normalized=value/127;
     if(id==='crossfade'&&crossfadeControl){crossfadeControl.value=String(Math.round(normalized*100));changed=true;}
+    if(id==='transitionProgress'&&transitionProgress){transitionProgress.value=String(Math.round(normalized*100));transitionProgress.dispatchEvent(new Event('input',{bubbles:true}));changed=true;}
     if(id==='strobeRate'){rate.value=String((1+normalized*7).toFixed(2));changed=true;}
     if(id==='strobeIntensity'){strobe.value=String((normalized*.96).toFixed(3));changed=true;}
    }
