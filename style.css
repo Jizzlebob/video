@@ -288,9 +288,9 @@ body{padding:0 16px 24px;background:#0e1012}
 .clip-grid-new-layer{cursor:pointer;touch-action:pan-y;user-select:none;-webkit-user-select:none}
 .clip-grid-layer-label{position:relative}
 .empty-layer-remove{position:absolute;right:5px;top:5px;width:22px;height:22px;border:1px solid #555;border-radius:4px;background:#292a2e;color:#ddd;cursor:pointer}
-.media-item{cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.media-item{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
 .media-item.pointer-dragging{opacity:.35}
-.clip-grid-cell,.clip-grid-new-layer,.clip-grid-layer-label{touch-action:pan-y}
+.clip-grid-cell,.clip-grid-new-layer,.clip-grid-layer-label{touch-action:none}
 .clip-grid-cell.filled{cursor:grab}
 .pointer-drop-target,.clip-grid-cell.drop-target{outline:2px solid #d1ff38!important;outline-offset:1px;background:#34431f!important}
 .clip-drag-ghost{position:fixed;z-index:99999;pointer-events:none;transform:translate(-50%,-140%);padding:10px 14px;border:1px solid #d1ff38;border-radius:7px;background:#20251a;color:#eaffb4;font-size:12px;font-weight:800;box-shadow:0 8px 25px #0009;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
