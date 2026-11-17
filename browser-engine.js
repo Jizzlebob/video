@@ -26,7 +26,6 @@ async function setupGifPlayback(file,t){
  const nativeImage=t.video;
  t.nativeGifImage=nativeImage;
  if(nativeImage&&nativeImage.tagName==='IMG'){
-  nativeImage.addEventListener('load',()=>{}, {once:true});
   // Native playback remains available even when WebCodecs is unsupported.
   keepNativeGifAnimated(t);
  }
@@ -60,7 +59,6 @@ async function setupGifPlayback(file,t){
   t.gifNativeFallback=false;
   status('Animiertes GIF aktiv: '+file.name);
  }catch(error){
-  try{firstFrame?.close()}catch(e){}
   try{decoder?.close()}catch(e){}
   keepNativeGifAnimated(t);t.gifNativeFallback=true;
   status('GIF nutzt native Animation: '+file.name);
@@ -82,7 +80,7 @@ function updateGifFrames(time){
     const width=frame.displayWidth||frame.codedWidth;
     const height=frame.displayHeight||frame.codedHeight;
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.drawImage(frame,0,0,width,height,0,0,canvas.width,canvas.height);
+    ctx.drawImage(frame,0,0,canvas.width,canvas.height);
     t.gifFrameIndex=next;t.gifDuration=gifFrameDuration(frame);
     t.gifNextAt=performance.now()+t.gifDuration;
    }finally{try{frame.close()}catch(e){}}
