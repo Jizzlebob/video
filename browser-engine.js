@@ -33,10 +33,10 @@ export function initBrowserEngine({state,render,status,saveProject,savedProject}
  const input=document.getElementById('videoInput'),cameraButton=document.getElementById('addCamera'),generatorButton=document.getElementById('addGenerator'),generatorSelect=document.getElementById('generatorKind'),tapButton=document.getElementById('tapTempo'),midiButton=document.getElementById('midiToggle'),midiStatus=document.getElementById('midiStatus');
  const midi={access:null,active:false};
  let taps=[],manualBpm=0,lastBeatRate=0;
- function deck(){return state.tracks.some(t=>t.deck==='A')?'B':'A'}
+ function deck(){return 'A'}
  function restored(name){return savedProject?.tracks?.find(t=>t.fileName===name)||null}
  function addTrack(t){state.tracks.push(t);state.selectedId=t.id;render();saveProject();return t}
- function base(name,type,video,url='',fileName=name){const old=restored(fileName);return Object.assign({id:uid(),name,fileName,type,video,url,volume:.8,opacity:1,visible:true,strobe:true,deck:deck(),x:.1,y:.1,w:.8,h:.8,error:'',blendMode:'normal',syncBeats:0},old?{deck:old.deck||deck(),x:old.x??.1,y:old.y??.1,w:old.w??.8,h:old.h??.8,opacity:old.opacity??1,volume:old.volume??.8,visible:old.visible??true,strobe:old.strobe??true,blendMode:old.blendMode||'normal',syncBeats:old.syncBeats||0,playMode:old.playMode||'loop',autopilot:old.autopilot||'off',filterPreset:old.filterPreset||'',solo:!!old.solo,audioReactive:!!old.audioReactive}:{})}
+ function base(name,type,video,url='',fileName=name){const old=restored(fileName);return Object.assign({id:uid(),layerId:old?.layerId||uid(),column:old?.column??0,name,fileName,type,video,url,volume:.8,opacity:1,visible:true,strobe:true,deck:deck(),x:.1,y:.1,w:.8,h:.8,error:'',blendMode:'normal',syncBeats:0},old?{deck:old.deck||deck(),x:old.x??.1,y:old.y??.1,w:old.w??.8,h:old.h??.8,opacity:old.opacity??1,volume:old.volume??.8,visible:old.visible??true,strobe:old.strobe??true,blendMode:old.blendMode||'normal',syncBeats:old.syncBeats||0,playMode:old.playMode||'loop',autopilot:old.autopilot||'off',filterPreset:old.filterPreset||'',solo:!!old.solo,audioReactive:!!old.audioReactive}:{})}
  function addFiles(files){
   let count=0;
   for(const file of files){
