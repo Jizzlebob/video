@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#101114" />
   <title>VJ Studio — Live Video Mixer</title>
-  <link rel="stylesheet" href="./style.css?v=beta-0.2.0" />
+  <link rel="stylesheet" href="./style.css?v=beta-0.2.1" />
   <style>
     /* Immediate visual fallback while the versioned stylesheet loads. */
     html,body{margin:0;min-height:100%;background:#101114;color:#e9e9eb;font:13px/1.4 Inter,system-ui,sans-serif}
@@ -21,7 +21,7 @@
 <body>
   <header class="topbar">
     <a class="brand" href="#"><span class="brand-icon">VJ</span><span>VJ STUDIO <small>LIVE VIDEO MIXER</small></span></a>
-    <span class="version-badge">BETA v0.2.0</span><div class="top-actions"><span class="engine-status"><i></i> WEB ENGINE</span><label class="quality-control">QUALITY <select id="renderQuality"><option value="540">PERFORMANCE · 540p</option><option value="720" selected>BALANCED · 720p</option><option value="1080">HIGH · 1080p</option></select></label><button id="openEffects" class="toolbar-button">✧ <span>Effekte</span></button><button id="openOutput" class="toolbar-button">↗ <span>Ausgabe öffnen</span></button><button id="fullscreenOutput" class="toolbar-button" title="Vollbild">⛶</button></div>
+    <span class="version-badge">BETA v0.2.1</span><div class="top-actions"><span class="engine-status"><i></i> WEB ENGINE</span><label class="quality-control">QUALITY <select id="renderQuality"><option value="540">PERFORMANCE · 540p</option><option value="720" selected>BALANCED · 720p</option><option value="1080">HIGH · 1080p</option></select></label><button id="openEffects" class="toolbar-button">✧ <span>Effekte</span></button><button id="openOutput" class="toolbar-button">↗ <span>Ausgabe öffnen</span></button><button id="fullscreenOutput" class="toolbar-button" title="Vollbild">⛶</button></div>
   </header>
   <main class="studio">
     <aside class="panel library">
@@ -45,6 +45,6 @@
     </section>
   </main>
   <dialog id="effectsDialog" class="effects-dialog"><div class="dialog-head"><div><span class="eyebrow">LIVE PROCESSING</span><h2>Video Effekte & Filter</h2></div><button id="closeEffects" class="toolbar-button">Schließen ✕</button></div><div id="effectsPopupContent"></div></dialog>
-  <script src="./script.js?v=beta-0.2.0"></script>
+  <script src="./script.js?v=beta-0.2.1"></script>
 </body>
 </html>
