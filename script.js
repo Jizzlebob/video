@@ -394,9 +394,9 @@ function midiMessage(event){
  if(pendingMidiAction){
   const selected=document.getElementById('midiInputSelect')?.value||'';
   if(selected&&selected!==event.currentTarget.id)return;
-  midiMappings[pendingMidiAction]={type,channel,number,deviceId:event.currentTarget.id,deviceName:event.currentTarget.name||''};
+  const learned={type,channel,number,deviceId:selected||null,deviceName:selected?(event.currentTarget.name||''):''};midiMappings[pendingMidiAction]=learned;
   pendingMidiAction=null;persistSettings();renderMidiMappingRows();
-  const info=document.getElementById('midiSettingsStatus');if(info)info.textContent='MIDI gelernt: '+midiLabel(midiMappings[Object.keys(midiMappings).find(k=>midiMappings[k]?.number===number&&midiMappings[k]?.channel===channel&&midiMappings[k]?.deviceId===event.currentTarget.id)]);
+  const info=document.getElementById('midiSettingsStatus');if(info)info.textContent='MIDI gelernt: '+midiLabel(learned);
   return;
  }
  const active=type==='note'?value>0:value>=64,was=midiLastValues[edgeKey]||false;midiLastValues[edgeKey]=active;
