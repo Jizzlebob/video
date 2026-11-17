@@ -69,7 +69,7 @@ function drawClip(ctx,t,c,mix=1){
  let source=v,nativeFilter=false;
  if(preset!=='none'){
   const fc=t.filterCanvas||(t.filterCanvas=document.createElement('canvas'));
-  const filtered=applyFallbackFilter(fc.getContext('2d',{willReadFrequently:true}),fc,v,preset);
+  const filtered=applyFallbackFilter(fc.getContext('2d',CANVAS_FILTER_SUPPORTED?{}:{willReadFrequently:true}),fc,v,preset);
   if(filtered)source=filtered;
   else{
    nativeFilter=true;
