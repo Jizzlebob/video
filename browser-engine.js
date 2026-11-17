@@ -4,7 +4,7 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const uid=()=>globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random()}`;
 const BEATS=[.25,.5,1,2,4,8,16,32];
 const OPS={normal:'source-over',add:'lighter',screen:'screen',multiply:'multiply',overlay:'overlay',difference:'difference',lighten:'lighten',darken:'darken',subtract:'difference'};
-function createImageMedia(file,url){const img=new Image();img.src=url;img.decoding='async';img.loading='eager';Object.defineProperties(img,{videoWidth:{get:()=>img.naturalWidth},videoHeight:{get:()=>img.naturalHeight},readyState:{get:()=>img.complete&&img.naturalWidth?4:0},paused:{get:()=>false}});img.volume=.8;img.play=()=>Promise.resolve();img.pause=()=>{};return img}
+function createImageMedia(file,url){const img=new Image();img.src=url;img.decoding='async';img.loading='eager';img.setAttribute('fetchpriority','high');Object.defineProperties(img,{videoWidth:{get:()=>img.naturalWidth},videoHeight:{get:()=>img.naturalHeight},readyState:{get:()=>img.complete&&img.naturalWidth?4:0},paused:{get:()=>false}});img.volume=.8;img.play=()=>Promise.resolve();img.pause=()=>{};return img}
 function createGenerator(kind){
  const c=document.createElement('canvas');c.width=640;c.height=360;
  Object.defineProperties(c,{videoWidth:{get:()=>c.width},videoHeight:{get:()=>c.height},readyState:{get:()=>4},paused:{get:()=>false}});
@@ -14,7 +14,7 @@ function createGenerator(kind){
 function renderGenerator(t,time,bpm){
  const c=t.video,x=c.getContext('2d'),w=c.width,h=c.height,beat=bpm>0?time/60000*bpm:time/1000;
  c.currentTime=time/1000;x.save();x.globalCompositeOperation='source-over';x.clearRect(0,0,w,h);
- const hue=(time*.025)%360,phase=beat*Math.PI*2;
+ const baseHue={rainbow:0,fire:12,ocean:195,neon:285,forest:115}[t.generatorPalette||'rainbow']??0,hue=(baseHue+time*.025)%360,phase=beat*Math.PI*2;
  const grad=(a,b)=>{const g=x.createLinearGradient(0,0,w,h);g.addColorStop(0,a);g.addColorStop(1,b);return g};
  switch(t.generatorKind){
  case'plasma':{const g=x.createRadialGradient(w*(.5+.22*Math.sin(time*.00031)),h*(.5+.3*Math.cos(time*.00027)),4,w*.5,h*.5,w*.8);g.addColorStop(0,`hsl(${hue} 95% 70%)`);g.addColorStop(.45,`hsl(${hue+95} 90% 38%)`);g.addColorStop(1,'#080817');x.fillStyle=g;x.fillRect(0,0,w,h);for(let i=0;i<6;i++){x.beginPath();x.arc(w/2+Math.sin(time*.0002+i)*w*.24,h/2+Math.cos(time*.00023+i*2)*h*.25,25+i*13,0,Math.PI*2);x.strokeStyle=`hsla(${hue+i*47} 100% 75% / .45)`;x.lineWidth=3;x.stroke()}break}
@@ -30,7 +30,7 @@ function renderGenerator(t,time,bpm){
  x.restore();
 }
 export function initBrowserEngine({state,render,status,saveProject,savedProject}){
- const input=document.getElementById('videoInput'),cameraButton=document.getElementById('addCamera'),generatorButton=document.getElementById('addGenerator'),generatorSelect=document.getElementById('generatorKind'),tapButton=document.getElementById('tapTempo'),midiButton=document.getElementById('midiToggle'),midiStatus=document.getElementById('midiStatus');
+ const input=document.getElementById('videoInput'),paletteSelect=document.getElementById('generatorPalette'),cameraButton=document.getElementById('addCamera'),generatorButton=document.getElementById('addGenerator'),generatorSelect=document.getElementById('generatorKind'),tapButton=document.getElementById('tapTempo'),midiButton=document.getElementById('midiToggle'),midiStatus=document.getElementById('midiStatus');
  const midi={access:null,active:false};
  let taps=[],manualBpm=0,lastBeatRate=0;
  function deck(){return 'A'}
@@ -53,8 +53,8 @@ export function initBrowserEngine({state,render,status,saveProject,savedProject}
   if(count)status(`${count} Quelle(n) hinzugefügt.`);else status('Keine unterstützten Medien gefunden. Video oder Bild wählen.',true);
  }
  input.addEventListener('change',e=>{addFiles(Array.from(e.target.files||[]));e.target.value=''});
- function addGenerator(kind,old=null){const canvas=createGenerator(kind),t=base(kind.toUpperCase(),'generator',canvas,'',kind.toUpperCase());t.generatorKind=kind;t.name={plasma:'Plasma',tunnel:'Tunnel',bars:'Beat Bars',rings:'Rings',noise:'Noise',kaleido:'Kaleidoscope',gradient:'Gradient',strobe:'Strobe',checker:'Checker'}[kind]||kind;if(old)Object.assign(t,{deck:old.deck||t.deck,x:old.x??t.x,y:old.y??t.y,w:old.w??t.w,h:old.h??t.h,opacity:old.opacity??t.opacity,visible:old.visible??true,strobe:old.strobe??true,blendMode:old.blendMode||'normal',syncBeats:old.syncBeats||0});addTrack(t);if(!old)status(`Generator hinzugefügt: ${t.name}`)}
- generatorButton.addEventListener('click',()=>addGenerator(generatorSelect.value));
+ function addGenerator(kind,old=null){const canvas=createGenerator(kind),t=base(kind.toUpperCase(),'generator',canvas,'',kind.toUpperCase());t.generatorKind=kind;t.generatorPalette=old?.generatorPalette||paletteSelect?.value||'rainbow';t.name={plasma:'Plasma',tunnel:'Tunnel',bars:'Beat Bars',rings:'Rings',noise:'Noise',kaleido:'Kaleidoscope',gradient:'Gradient',strobe:'Strobe',checker:'Checker'}[kind]||kind;if(old)Object.assign(t,{generatorPalette:old.generatorPalette||t.generatorPalette,deck:old.deck||t.deck,x:old.x??t.x,y:old.y??t.y,w:old.w??t.w,h:old.h??t.h,opacity:old.opacity??t.opacity,visible:old.visible??true,strobe:old.strobe??true,blendMode:old.blendMode||'normal',syncBeats:old.syncBeats||0});addTrack(t);if(!old)status(`Generator hinzugefügt: ${t.name}`)}
+ generatorButton.addEventListener('click',()=>addGenerator(generatorSelect.value));paletteSelect?.addEventListener('change',()=>{const t=state.tracks.find(x=>x.id===state.selectedId&&x.type==='generator');if(t){t.generatorPalette=paletteSelect.value;saveProject();}});
  async function addCamera(){if(!navigator.mediaDevices?.getUserMedia){status('Kamera benötigt HTTPS und getUserMedia.',true);return}try{const stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720},frameRate:{ideal:30,max:30}},audio:false}),video=document.createElement('video');video.srcObject=stream;video.muted=true;video.playsInline=true;video.autoplay=true;video.setAttribute('playsinline','');await video.play();const t=base('Live Camera','camera',video);t.stream=stream;addTrack(t);status('Live-Kamera aktiv.')}catch(e){status('Kamera nicht verfügbar oder Berechtigung verweigert: '+e.message,true)}}
  cameraButton.addEventListener('click',addCamera);
  for(const old of savedProject?.tracks||[])if(old.type==='generator'&&old.generatorKind)addGenerator(old.generatorKind,old);
