@@ -338,7 +338,7 @@ function renderMidiMappingRows(){
   row.append(name,capture,clear);root.append(row);
  });
  const heading=document.createElement('p');heading.className='muted small';heading.textContent='MIDI-Fader · kontinuierliche CC-Steuerung';root.append(heading);
- const faderLabels={crossfade:'Crossfader',strobeRate:'Strobe Rate',strobeIntensity:'Strobe Intensität'};
+ const faderLabels={crossfade:'Crossfader',transitionProgress:'Übergang (Preview → Live)',strobeRate:'Strobe Rate',strobeIntensity:'Strobe Intensität'};
  for(const [id,label] of Object.entries(faderLabels)){
   const row=document.createElement('div');row.className='mapping-row';
   const name=document.createElement('strong');name.textContent=label;
@@ -410,7 +410,7 @@ function midiMessage(event){
   if(selected&&selected!==event.currentTarget.id)return;
   if(type!=='cc')return;
   midiFaderMappings[pendingMidiControl]={type:'cc',channel,number,deviceId:selected||null,deviceName:selected?(event.currentTarget.name||''):''};
-  const label={crossfade:'Crossfader',strobeRate:'Strobe Rate',strobeIntensity:'Strobe Intensität'}[pendingMidiControl];
+  const label={crossfade:'Crossfader',transitionProgress:'Übergang (Preview → Live)',strobeRate:'Strobe Rate',strobeIntensity:'Strobe Intensität'}[pendingMidiControl];
   pendingMidiControl=null;persistSettings();renderMidiMappingRows();
   const info=document.getElementById('midiSettingsStatus');if(info)info.textContent='MIDI-Fader gelernt: '+label+' · '+midiLabel(midiFaderMappings[Object.keys(midiFaderMappings).find(k=>midiFaderMappings[k]?.number===number&&midiFaderMappings[k]?.channel===channel)]);
   return;
@@ -429,6 +429,7 @@ function midiMessage(event){
    if(m&&m.number===number&&m.channel===channel&&(!m.deviceId||m.deviceId===event.currentTarget.id)){
     const normalized=value/127;
     if(id==='crossfade'&&crossfadeControl){crossfadeControl.value=String(Math.round(normalized*100));changed=true;}
+    if(id==='transitionProgress'&&transitionProgress){transitionProgress.value=String(Math.round(normalized*100));transitionProgress.dispatchEvent(new Event('input',{bubbles:true}));changed=true;}
     if(id==='strobeRate'){rate.value=String((1+normalized*7).toFixed(2));changed=true;}
     if(id==='strobeIntensity'){strobe.value=String((normalized*.96).toFixed(3));changed=true;}
    }
