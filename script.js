@@ -66,7 +66,7 @@ function drawClip(ctx,t,c,mix=1,renderState=state){
  const v=t.video;
  if(!t.visible||v.readyState<HTMLMediaElement.HAVE_CURRENT_DATA||!v.videoWidth)return;
  const box={x:t.x*c.width,y:t.y*c.height,w:t.w*c.width,h:t.h*c.height},preset=t.filterPreset||renderState.filterPreset||'none';
- const frameToken=t.type==='image'&&/\\.gif$/i.test(t.fileName||'')?(t.gifDecoder?'gif:'+t.gifFrameIndex:'gif-native:'+Math.floor(performance.now()/33)):(Number.isFinite(v.currentTime)?v.currentTime:'static');
+ const frameToken=t.type==='image'&&String(t.fileName||'').toLowerCase().endsWith('.gif')?(t.gifDecoder?'gif:'+t.gifFrameIndex:'gif-native:'+Math.floor(performance.now()/33)):(Number.isFinite(v.currentTime)?v.currentTime:'static');
  let source=v,nativeFilter=false;
  if(preset!=='none'){
   const fc=t.filterCanvas||(t.filterCanvas=document.createElement('canvas'));
