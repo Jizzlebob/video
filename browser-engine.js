@@ -5,6 +5,37 @@ const uid=()=>globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random()}
 const BEATS=[.25,.5,1,2,4,8,16,32];
 const OPS={normal:'source-over',add:'lighter',screen:'screen',multiply:'multiply',overlay:'overlay',difference:'difference',lighten:'lighten',darken:'darken',subtract:'difference'};
 function createImageMedia(file,url){const img=new Image();img.src=url;img.decoding='async';img.loading='eager';img.setAttribute('fetchpriority','high');Object.defineProperties(img,{videoWidth:{get:()=>img.naturalWidth},videoHeight:{get:()=>img.naturalHeight},readyState:{get:()=>img.complete&&img.naturalWidth?4:0},paused:{get:()=>false}});img.volume=.8;img.play=()=>Promise.resolve();img.pause=()=>{};return img}
+async function setupGifPlayback(file,t){
+ if(typeof ImageDecoder!=='function')return;
+ let decoder=null;
+ try{
+  decoder=new ImageDecoder({data:await file.arrayBuffer(),type:'image/gif'});
+  await decoder.tracks.ready;
+  const track=decoder.tracks.selectedTrack,frameCount=track?.frameCount||0;
+  if(!frameCount)throw new Error('GIF enthält keine decodierbaren Frames');
+  const first=await decoder.decode({frameIndex:0,completeFramesOnly:true});
+  const frame=first.image,canvas=document.createElement('canvas');
+  canvas.width=frame.displayWidth||frame.codedWidth;canvas.height=frame.displayHeight||frame.codedHeight;
+  const ctx=canvas.getContext('2d');ctx.drawImage(frame,0,0,canvas.width,canvas.height);
+  const duration=Math.max(20,(frame.duration||100000)/1000);frame.close();
+  Object.defineProperties(canvas,{videoWidth:{get:()=>canvas.width},videoHeight:{get:()=>canvas.height},readyState:{get:()=>4},paused:{get:()=>false}});
+  canvas.volume=.8;canvas.play=()=>Promise.resolve();canvas.pause=()=>{};
+  t.video=canvas;t.gifDecoder=decoder;t.gifFrameCount=frameCount;t.gifFrameIndex=0;t.gifNextAt=performance.now()+duration;t.gifFramePending=false;t.gifDuration=duration;
+  status('Animiertes GIF bereit: '+file.name);
+ }catch(error){try{decoder?.close()}catch(e){};t.gifDecoder=null;status('GIF läuft über die native Bildwiedergabe: '+file.name,true)}
+}
+async function updateGifFrames(time){
+ for(const t of state.tracks){
+  const d=t.gifDecoder;if(!d||t.type!=='image'||t.gifFramePending||time<t.gifNextAt)continue;
+  t.gifFramePending=true;
+  const next=(t.gifFrameIndex+1)%t.gifFrameCount;
+  d.decode({frameIndex:next,completeFramesOnly:true}).then(result=>{
+   const frame=result.image,ctx=t.video.getContext('2d');
+   ctx.clearRect(0,0,t.video.width,t.video.height);ctx.drawImage(frame,0,0,t.video.width,t.video.height);
+   t.gifFrameIndex=next;t.gifDuration=Math.max(20,(frame.duration||100000)/1000);t.gifNextAt=performance.now()+t.gifDuration;frame.close();
+  }).catch(()=>{try{d.close()}catch(e){}t.gifDecoder=null}).finally(()=>{t.gifFramePending=false});
+ }
+}
 function createGenerator(kind){
  const c=document.createElement('canvas');c.width=640;c.height=360;
  Object.defineProperties(c,{videoWidth:{get:()=>c.width},videoHeight:{get:()=>c.height},readyState:{get:()=>4},paused:{get:()=>false}});
@@ -47,7 +78,7 @@ export function initBrowserEngine({state,render,status,saveProject,savedProject}
     video.addEventListener('error',()=>{t.error=video.error?.code===4?'Codec nicht unterstützt':'Ladefehler';status(`${file.name}: ${t.error}. MP4/H.264 oder WebM testen.`,true);render()});video.load();addTrack(t);count++;
    }else if(file.type.startsWith('image/')||IMAGE_EXT.test(file.name)){
     const url=URL.createObjectURL(file),img=createImageMedia(file,url),t=base(file.name.replace(/\.[^/.]+$/,''),'image',img,url,file.name);
-    img.onload=()=>{status(`Bild bereit: ${file.name} · ${img.naturalWidth}×${img.naturalHeight}`);render()};img.onerror=()=>{t.error='Bild konnte nicht geladen werden';status(t.error,true);render()};addTrack(t);count++;
+    img.onload=()=>{status(`Bild bereit: ${file.name} · ${img.naturalWidth}×${img.naturalHeight}`);render()};img.onerror=()=>{t.error='Bild konnte nicht geladen werden';status(t.error,true);render()};addTrack(t);if(/\.gif$/i.test(file.name)||file.type==='image/gif')setupGifPlayback(file,t);count++;
    }
   }
   if(count)status(`${count} Quelle(n) hinzugefügt.`);else status('Keine unterstützten Medien gefunden. Video oder Bild wählen.',true);
@@ -58,7 +89,7 @@ export function initBrowserEngine({state,render,status,saveProject,savedProject}
  async function addCamera(){if(!navigator.mediaDevices?.getUserMedia){status('Kamera benötigt HTTPS und getUserMedia.',true);return}try{const stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720},frameRate:{ideal:30,max:30}},audio:false}),video=document.createElement('video');video.srcObject=stream;video.muted=true;video.playsInline=true;video.autoplay=true;video.setAttribute('playsinline','');await video.play();const t=base('Live Camera','camera',video);t.stream=stream;addTrack(t);status('Live-Kamera aktiv.')}catch(e){status('Kamera nicht verfügbar oder Berechtigung verweigert: '+e.message,true)}}
  cameraButton.addEventListener('click',addCamera);
  for(const old of savedProject?.tracks||[])if(old.type==='generator'&&old.generatorKind)addGenerator(old.generatorKind,old);
- function renderGenerators(time){for(const t of state.tracks)if(t.type==='generator'&&t.visible)renderGenerator(t,time,state.beatBpm||manualBpm)}
+ function renderGenerators(time){for(const t of state.tracks)if(t.type==='generator'&&t.visible)renderGenerator(t,time,state.beatBpm||manualBpm);updateGifFrames(time)}
  function updatePlayback(time){const bpm=state.beatBpm||manualBpm;if(!bpm)return;for(const t of state.tracks){if(!t.video||t.type==='image'||t.type==='generator'||t.type==='camera')continue;if(!t.syncBeats){if(t._syncRate){t.video.playbackRate=1;t._syncRate=false;}continue;}const d=t.video.duration;if(!Number.isFinite(d)||d<=0)continue;const rate=d/(t.syncBeats*60/bpm);const target=clamp(rate,.25,4);if(Math.abs(t.video.playbackRate-target)>.03)t.video.playbackRate=target;t._syncRate=true}}
  tapButton.addEventListener('click',()=>{const now=performance.now()/1000;if(taps.length&&now-taps[taps.length-1]>2)taps=[];taps.push(now);if(taps.length>8)taps.shift();if(taps.length>=2){manualBpm=clamp(60/((taps[taps.length-1]-taps[0])/(taps.length-1)),30,240);document.getElementById('beatReadout').textContent=`${Math.round(manualBpm)} BPM · TAP TEMPO`;status(`Tap Tempo: ${Math.round(manualBpm)} BPM`)}});
  midiButton.addEventListener('click',async()=>{if(!navigator.requestMIDIAccess){midiStatus.textContent='MIDI N/A';status('Web MIDI wird von diesem Browser nicht unterstützt.',true);return}try{midi.access=await navigator.requestMIDIAccess({sysex:false});midi.active=true;for(const input of midi.access.inputs.values())input.onmidimessage=onMidi;midi.access.onstatechange=()=>{for(const input of midi.access.inputs.values())input.onmidimessage=onMidi};midiStatus.textContent=`${midi.access.inputs.size} MIDI IN`;status('Web MIDI verbunden. Note-on startet den ausgewählten Clip; Note-off pausiert ihn.')}catch(e){midiStatus.textContent='MIDI BLOCKED';status('MIDI-Zugriff verweigert: '+e.message,true)}});
