@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#101114" />
   <title>VJ Studio — Live Video Mixer</title>
-  <link rel="stylesheet" href="./style.css?v=beta-0.7.1" />
+  <link rel="stylesheet" href="./style.css?v=beta-0.7.2" />
   <style>
     /* Immediate visual fallback while the versioned stylesheet loads. */
     html,body{margin:0;min-height:100%;background:#101114;color:#e9e9eb;font:13px/1.4 Inter,system-ui,sans-serif}
@@ -22,7 +22,7 @@
   <header class="topbar">
     <a class="brand" href="#"><span class="brand-icon">VJ</span><span>VJ STUDIO <small>LIVE VIDEO MIXER</small></span></a>
     <div class="top-actions">
-      <span class="version-badge">BETA v0.7.1</span>
+      <span class="version-badge">BETA v0.7.2</span>
       <label class="quality-control top-quality">Ansicht · Auflösung <select id="renderQuality"><option value="540">Schnell · 540p</option><option value="720" selected>Ausgewogen · 720p</option><option value="1080">Hoch · 1080p</option></select></label>
       <button id="openEffects" class="toolbar-button">Effekte</button>
       <button id="openOutput" class="toolbar-button primary-utility">Ausgabe-Fenster</button>
@@ -45,7 +45,7 @@
             <button id="addGenerator" class="subtle-button" type="button">＋ Generator</button>
           </div>
           <div class="project-actions"><button id="exportProject" class="toolbar-button" type="button">Projekt exportieren</button><label class="toolbar-button project-import">Projekt importieren<input id="importProjectInput" type="file" accept="application/json,.json" /></label></div>
-          <div class="library-bottom"><span class="eyebrow">AUDIOEINGANG</span><button id="micToggle" class="mic-button">◉ <span>Mikrofon aktivieren</span></button><div class="meter"><div id="micMeterFill"></div></div><p id="micHelp" class="muted small">Mikrofon benötigt HTTPS und Browser-Berechtigung.</p></div>
+          
         </div>
       </details>
     </aside>
@@ -70,18 +70,19 @@
       </section>
       <section class="panel strobe-global"><div class="strobe-head"><strong>STROBE</strong><label class="strobe-switch"><input id="strobeToggle" type="checkbox" /><span>Strobe aktivieren</span></label></div><div class="strobe-settings"><label class="effect-control"><span>INTENSITÄT <output id="strobeValue">49%</output></span><input id="strobeIntensity" type="range" min="0" max="0.96" step="0.01" value="0.42" /></label><label class="effect-control"><span>RATE <output id="rateValue">4 Hz</output></span><input id="strobeRate" type="range" min="1" max="8" step="0.5" value="4" /></label></div></section>
 <section class="panel visualizer-global"><div class="strobe-head"><strong>VISUALIZER</strong><span class="muted small">Darstellung & Farben</span></div><div class="visualizer-controls"><label class="effect-control"><span>STIL</span><select id="visualizerStyle"><option value="bars">Neon Bars</option><option value="wave">Waveform</option><option value="circle">Orbit</option><option value="spectrum">Spectrum</option><option value="off">Aus</option></select></label><label class="effect-control color-control"><span>FARBE A</span><input id="visualizerColorA" type="color" value="#55e8d7" /></label><label class="effect-control color-control"><span>FARBE B</span><input id="visualizerColorB" type="color" value="#bd70ff" /></label></div><p class="muted small">Visualizer direkt in der Vorschau verschieben und skalieren.</p></section>
+      <section class="panel audio-global"><div class="strobe-head"><strong>MIKROFON & BEAT-SYNC</strong></div><div class="mic-global-controls"><button id="micToggle" class="mic-button">◉ <span>Mikrofon aktivieren</span></button><div class="meter"><div id="micMeterFill"></div></div><p id="micHelp" class="muted small">Mikrofon benötigt HTTPS und Browser-Berechtigung.</p></div><div class="effect-deck audio-deck"><div class="deck-heading"><span class="eyebrow">AUDIO & BEAT-SYNC</span><span id="micStatus" class="muted small">MIC OFF</span><span id="beatReadout" class="muted small">MIC OFF · FREE RATE</span><button id="tapTempo" class="subtle-button" type="button">TAP TEMPO</button><button id="midiToggle" class="subtle-button" type="button">MIDI verbinden</button><span id="midiStatus" class="muted small">MIDI OFF</span></div><div class="effect-controls"><label class="effect-control"><span>MIC GAIN <output id="gainValue">12×</output></span><input id="visualizerGain" type="range" min="1" max="30" step="0.5" value="12" /></label><label class="effect-control"><span>BEAT EMPFINDLICHKEIT</span><input id="micSensitivity" type="range" min="0.8" max="4" step="0.1" value="2" /></label></div><p class="muted small drag-hint">Visualizer in der Vorschau verschieben und skalieren. Beat-Sync erkennt Kick/Bass und hält ein Tempo-Raster.</p></div></section>
             <details class="advanced-workspace">
         <summary><span><strong>Feineinstellungen</strong><small>Layer-Regler, Decks, Filter, Strobe, Beat-Sync und MIDI</small></span><em>Nur öffnen, wenn du sie brauchst</em></summary>
         <section class="panel layer-panel"><div class="panel-title"><div><span class="eyebrow">EBENEN-DETAILS</span><h2>Layer-Regler</h2></div><span class="muted small">Größe, Position, Deckkraft, Mischmodus und Reihenfolge</span></div><div id="tracks" class="tracks"><div class="empty">Hier erscheinen die erweiterten Regler deiner Ebenen.</div></div></section>
-        <section class="panel control-deck"><div class="transport"><button id="playAll" class="transport-button" title="Alle Clips abspielen">▶</button><button id="pauseAll" class="transport-button" title="Alle Clips pausieren">Ⅱ</button><div class="crossfader-block"><div class="control-label"><span>VIDEO-CROSSFADER</span><output id="crossfadeValue">A 50 / 50 B</output></div><input id="crossfader" type="range" min="0" max="100" value="50" /></div></div>
+        <section class="panel control-deck"><div class="transport"><button id="playAll" class="transport-button" title="Alle Clips abspielen">▶</button><button id="pauseAll" class="transport-button" title="Alle Clips pausieren">Ⅱ</button></div>
           <div class="effect-deck"><div class="deck-heading"><span class="eyebrow">VIDEO-EFFEKTE</span><span class="muted small">Erweitert</span></div><div class="effect-controls"><label class="effect-control"><span>LOOK / FILTER</span><select id="filterPreset"><option value="none">Original</option><option value="cinema">Cinema</option><option value="vivid">Neon Pop</option><option value="mono">Monochrom</option><option value="noir">Noir</option><option value="dream">Dream Glow</option><option value="warm">Warm Film</option><option value="cool">Arctic</option><option value="invert">Invert</option></select></label><label class="chroma-toggle"><input id="chromaEnabled" type="checkbox" /><span>CHROMA KEY</span></label><label class="effect-control color-control"><span>KEY-FARBE</span><input id="chromaColor" type="color" value="#00ff00" /></label><label class="effect-control"><span>TOLERANZ <output id="chromaValue">35</output></span><input id="chromaTolerance" type="range" min="5" max="120" step="1" value="35" /></label></div></div>
-          <div class="effect-deck audio-deck"><div class="deck-heading"><span class="eyebrow">AUDIO & BEAT-SYNC</span><span id="micStatus" class="muted small">MIC OFF</span><span id="beatReadout" class="muted small">MIC OFF · FREE RATE</span><button id="tapTempo" class="subtle-button" type="button">TAP TEMPO</button><button id="midiToggle" class="subtle-button" type="button">MIDI verbinden</button><span id="midiStatus" class="muted small">MIDI OFF</span></div><div class="effect-controls"><label class="effect-control"><span>MIC GAIN <output id="gainValue">12×</output></span><input id="visualizerGain" type="range" min="1" max="30" step="0.5" value="12" /></label><label class="effect-control"><span>BEAT EMPFINDLICHKEIT</span><input id="micSensitivity" type="range" min="0.8" max="4" step="0.1" value="2" /></label></div><p class="muted small drag-hint">Visualizer in der Vorschau verschieben und skalieren. Beat-Sync erkennt Kick/Bass und hält ein Tempo-Raster.</p></div>
+          
         </section>
       </details>
       <p class="safety-note">⚠ Strobe kann bei empfindlichen Personen Anfälle oder Unwohlsein auslösen. Intensität vorsichtig einstellen.</p>
     </section>
   </main>
   <dialog id="effectsDialog" class="effects-dialog"><div class="dialog-head"><div><span class="eyebrow">LIVE PROCESSING</span><h2>Video Effekte & Filter</h2></div><button id="closeEffects" class="toolbar-button">Schließen ✕</button></div><div id="effectsPopupContent"></div></dialog>
-  <script src="./script.js?v=beta-0.7.1"></script>
+  <script src="./script.js?v=beta-0.7.2"></script>
 </body>
 </html>
