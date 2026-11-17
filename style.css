@@ -125,3 +125,18 @@ button:focus-visible,select:focus-visible,input:focus-visible,.media-item:focus-
 .grid-hint{margin:7px 2px 0}
 @media(max-width:820px){.clip-grid{max-height:210px}.clip-grid-row{grid-template-columns:86px repeat(var(--grid-columns,4),minmax(78px,1fr));min-width:max-content}.grid-toolbar .muted{display:none}}
 @media(max-width:440px){.clip-grid-row{grid-template-columns:76px repeat(var(--grid-columns,4),minmax(72px,1fr))}.clip-grid-cell{padding:4px}}
+
+/* Preview -> Program transition controls */
+.transition-panel{padding:12px 14px;display:flex;flex-direction:column;gap:10px;border-color:#566b2b;background:linear-gradient(120deg,#20231c,#1b1c20 55%)}
+.transition-heading,.transition-main,.transition-options{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.transition-heading h2{margin:2px 0 0;font-size:16px}
+.transition-main{display:grid;grid-template-columns:minmax(130px,190px) minmax(180px,1fr);gap:18px}
+.take-button{min-height:42px;border:1px solid #d1ff38;border-radius:5px;background:#d1ff38;color:#14170b;font-weight:900;letter-spacing:.06em;cursor:pointer;padding:9px 18px}
+.take-button:hover{background:#e0ff73}.take-button:disabled{opacity:.65;cursor:wait}
+.transition-range{display:grid;grid-template-columns:1fr auto;gap:5px 12px;align-items:center;color:#c5c6c9;font-size:11px}
+.transition-range input{grid-column:1/-1;width:100%;accent-color:#d1ff38;cursor:ew-resize}
+.transition-range output{font-variant-numeric:tabular-nums;color:#d1ff38}
+.transition-options{justify-content:flex-start;color:#929399;font-size:9px;letter-spacing:.08em}
+.transition-options label{display:flex;align-items:center;gap:8px}
+.transition-options select{min-width:120px;padding:6px 8px;background:#25262a;color:#eee;border:1px solid #414249;border-radius:4px;font:inherit}
+@media(max-width:520px){.transition-main{grid-template-columns:1fr}.take-button{width:100%}.transition-options{gap:9px}.transition-options label{flex:1;justify-content:space-between}.transition-options select{min-width:0;max-width:130px}}

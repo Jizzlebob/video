@@ -21,6 +21,12 @@ This browser build is an independent web implementation inspired by the feature 
 The browser build deliberately uses browser-native media decoding and Canvas compositing. Native-only features such as FFmpeg/DXV/HAP decoding, Syphon/Spout, system-level MIDI/OSC networking and Ableton Link UDP are not available in an ordinary GitHub Pages browser context. Web MIDI is browser/device dependent and may not be available on iPad Safari. Local media stays on the device.
 
 
+## Preview / Program transitions (BETA v0.4.0)
+- New clips, grid launches, layer edits and visual settings are staged in Preview. Program remains unchanged until a transition is performed.
+- Use the **Übergang** button for an animated take, or scrub the transition slider manually.
+- Transition styles: Crossfade, Dip to Black, Wipe, Push and Zoom; duration is adjustable.
+- The Program output and any external output window show only the Program composition, not uncommitted Preview edits.
+
 ## OpenVJ-style Layer / Clip Grid (BETA v0.3.0)
 - The Clip Grid is arranged as rows (layers) and columns (clip slots).
 - Importing media creates a new layer. Multiple clips can be assigned to the same layer by selecting a clip in the media library and tapping an empty slot, or dragging it into a slot.
