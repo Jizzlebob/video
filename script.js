@@ -162,7 +162,7 @@ function enableClipPointerDrag(container,sourceSelector){
   if(e.pointerType==='mouse'&&e.button!==0)return;
   const source=e.target.closest(sourceSelector);if(!source)return;
   const id=source.dataset.id||source.dataset.clip;if(!id)return;
-  active={id:id,source:source,x:e.clientX,y:e.clientY,pointerId:e.pointerId};moved=false;
+  active={id:id,source:source,x:e.clientX,y:e.clientY,pointerId:e.pointerId};source.setPointerCapture?.(e.pointerId);moved=false;
  });
  container.addEventListener('pointermove',e=>{
   if(!active||active.pointerId!==e.pointerId)return;
