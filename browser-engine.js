@@ -8,7 +8,7 @@ function createImageMedia(file,url){const img=new Image();img.src=url;img.decodi
 function keepNativeGifAnimated(t){
  const img=t.nativeGifImage||t.video;
  if(!img)return false;
- t.video=img;t.gifDecoder=null;t.gifFramePending=false;
+ t.video=img;t.gifDecoder=null;t.gifFramePending=false;t.gifNativeFallback=true;
  // Keep the source image in the document so Safari/WebKit continues advancing
  // its native GIF timeline while the canvas renderer samples it with drawImage().
  img.setAttribute('aria-hidden','true');
