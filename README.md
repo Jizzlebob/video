@@ -50,3 +50,8 @@ The browser build deliberately uses browser-native media decoding and Canvas com
 - Clips lassen sich mit Maus, Finger oder Apple Pencil aus der Medienliste in einen Slot, auf eine vorhandene Ebene oder auf die Fläche „Neue Ebene“ ziehen.
 - Clips lassen sich auch direkt zwischen Clip-Slots verschieben. Pointer-Events unterstützen Touch-Geräte unabhängig vom HTML5-Drag-and-drop.
 - Leere Ebenen können über das × am Layer-Namen entfernt werden.
+
+
+## Layer-Compositing (BETA v0.6.1)
+- Layer werden in der Reihenfolge der Clip-Grid-Zeilen compositet: Layer 2 liegt unter Layer 1; Layer 1 wird zuletzt gezeichnet und bleibt damit darüber sichtbar.
+- Die Layer-Reihenfolge wird auch in Preview-/Program-Snapshots übernommen, damit der Übergang dieselbe Stapelreihenfolge verwendet.
